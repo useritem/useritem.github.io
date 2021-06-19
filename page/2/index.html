@@ -285,6 +285,583 @@
 
 
   
+    <article id="post-webpack学习/webpack环境优化" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+  
+  
+    <h1 itemprop="name">
+	
+	  <a class="article-title" href="/2021/04/26/webpack%E5%AD%A6%E4%B9%A0/webpack%E7%8E%AF%E5%A2%83%E4%BC%98%E5%8C%96/" target="_blank">webpack环境优化</a>
+  
+    </h1>
+  
+
+
+  
+  
+<a href="/2021/04/26/webpack%E5%AD%A6%E4%B9%A0/webpack%E7%8E%AF%E5%A2%83%E4%BC%98%E5%8C%96/" class="archive-article-date">
+        <time datetime="2021-04-26T08:15:57.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-04-26</time>
+</a>
+
+  
+  
+    
+
+  
+  </header>
+  
+  <div class="article-entry" itemprop="articleBody">
+    
+    
+    
+    <h1 id="1、HMR：模块热替换"><a href="#1、HMR：模块热替换" class="headerlink" title="1、HMR：模块热替换"></a>1、HMR：模块热替换</h1><p>当一个模块发生改变时，需要全部进行重新打包，所以使用HMR模块，提高其效率</p>
+<p>样式文件:可以使用HMR功能,因为style-loader自动实习了—–&gt;这就是为啥开发时用style-loader</p>
+<p>js文件:默认没有使用HMR功能–&gt;要修改js代码,添加支持HMR的代码<br>     注意:HMR功能对于js处理,只能处理非入口文件</p>
+<p>html:默认不能使用HMR功能,同时html文件不能热更新，解决:修改entry入口,将html文件引入(它不需要做HMR功能)，不止在plugins中引入：</p>
+<pre><code> entry:['./src/index.js','./src/index.html'],
+</code></pre>
+<h2 id="js处理（index-js文件下的）："><a href="#js处理（index-js文件下的）：" class="headerlink" title="js处理（index.js文件下的）："></a>js处理（index.js文件下的）：</h2><pre><code>// 一旦module.hot为true,说明开启了HMR功能，这时对某个js文件进行监听
+module.hot.accept('./print.js',function(){
+    //方法会监听print.js文件变化,一旦发生变换,其他默认不会打包构建
+    // 会执行后面的回调函数
+    print()
+})
+}
+</code></pre>
+<h1 id="2、source-map-–一种映射"><a href="#2、source-map-–一种映射" class="headerlink" title="2、source map   –一种映射"></a>2、source map   –一种映射</h1><h2 id="1、作用"><a href="#1、作用" class="headerlink" title="1、作用"></a>1、作用</h2><p>source-map:一种提供源代码到构建代码的映射技术(如果构建后代码错误,通过映射可以追踪源代码错误)(外部)</p>
+<h2 id="2、参数（进行组合）"><a href="#2、参数（进行组合）" class="headerlink" title="2、参数（进行组合）"></a>2、参数（进行组合）</h2><pre><code>[inline-|hidden-|eval][nosources][cheap-[module-]] source-map
+</code></pre>
+<p><strong>注意参数结合顺序</strong></p>
+<pre><code>source-map --&gt;外部
+</code></pre>
+<p>错误代码的准确信息以及”源代码”的错误位置(从f12中的soucer中看)</p>
+<pre><code> inline-source-map  ---&gt;内联source-map文件
+</code></pre>
+<p>1.只是一个内联的source-map</p>
+<p>2.错误代码的准确信息以及源代码的错误位置(从f12中的soucer中看) 类似于上</p>
+<pre><code>hidden-source-map --&gt;外部
+</code></pre>
+<p>提供错误代码的错误原因,没有错误位置,不能指到源代码错误,只能指示到构键后的位置</p>
+<pre><code>eval-source-map   --&gt;   内联
+</code></pre>
+<p>1.每个文件都有对应的source-map,并且都在eval中</p>
+<p>2.错误代码的准确信息以及源代码的错误位置(从f12中的soucer中看) 类似于上source-map</p>
+<pre><code>nosources-source-map --&gt;外部
+</code></pre>
+<p>提供错误代码的错误信息,没有任何源代码信息 —&gt;隐藏源代码hidden,nosources</p>
+<pre><code>cheap-source-map --&gt;外部
+</code></pre>
+<p> 错误代码的准确信息以及源代码的错误位置(从f12中的soucer中看),</p>
+<p> 区别source-map   -=–仅能精确到行</p>
+<pre><code>cheap-module-source-map --&gt;外部
+</code></pre>
+<p>错误代码的准确信息以及源代码的错误位置</p>
+<p>module会将loader的source,map加入</p>
+<p>内联与外部区别:</p>
+<p>1.外部生成的文件,内联没有</p>
+<p>2.内联更快</p>
+<h2 id="3、使用场景"><a href="#3、使用场景" class="headerlink" title="3、使用场景"></a>3、使用场景</h2><h3 id="（1）开发环境-速度快-调试友好"><a href="#（1）开发环境-速度快-调试友好" class="headerlink" title="（1）开发环境:速度快,调试友好"></a>（1）开发环境:速度快,调试友好</h3><p>速度快:eval –inline –cheap</p>
+<p>eval-cheap-souce-map(1,3组合)  因为这时cheap仅仅精确到行,列忽略</p>
+<p> 调试友好:</p>
+<p>source-map</p>
+<p>cheap-module-source-map</p>
+<p>cheap-source-map</p>
+<p>所以：<br>平衡感觉:eval-source-map(vue,react脚手架中使用)  /eval-cheap-module-source-map（就是没有列的信息）</p>
+<h3 id="（2）生产环境下-源代码是否需要隐藏-调试是否需要友好"><a href="#（2）生产环境下-源代码是否需要隐藏-调试是否需要友好" class="headerlink" title="（2）生产环境下:源代码是否需要隐藏,调试是否需要友好"></a>（2）生产环境下:源代码是否需要隐藏,调试是否需要友好</h3><p>隐藏hidden,nosources</p>
+<p>注意:内联导致代码非常,大,所有使用外部方式</p>
+<pre><code>nosources-source-map-全部隐藏
+hidden-source-map之隐藏元源代码,会提示构建之后的错误信息
+</code></pre>
+<p>推荐:source-map  / cheap-module-souce-map</p>
+<h2 id="4、使用方法："><a href="#4、使用方法：" class="headerlink" title="4、使用方法："></a>4、使用方法：</h2><pre><code>devtool:'eval-source-map' //开发
+</code></pre>
+<h1 id="3、优化打包速度"><a href="#3、优化打包速度" class="headerlink" title="3、优化打包速度"></a>3、优化打包速度</h1><h2 id="1-oneOf"><a href="#1-oneOf" class="headerlink" title="1.oneOf"></a>1.oneOf</h2><p>当在oneOf里面进行寻找loader时，但找到一个<strong>直接进行返回</strong>，注意如果有一种文件对应<strong>多种</strong>loader时，其余的放在oneof之外</p>
+<h3 id="使用："><a href="#使用：" class="headerlink" title="使用："></a>使用：</h3><pre><code>{
+oneOf：[
+        test:'/\.js$/'    ......
+    ]
+}
+</code></pre>
+<p>把之前的loader放置在oneOf的大数组中，并用{}对数组进行包裹</p>
+<h2 id="2-缓存"><a href="#2-缓存" class="headerlink" title="2.缓存"></a>2.缓存</h2><h3 id="（1）babel缓存"><a href="#（1）babel缓存" class="headerlink" title="（1）babel缓存"></a>（1）babel缓存</h3><pre><code>cacheDirectory:true ----&gt;第二次打包构建速度更快
+</code></pre>
+<p>直接在presets数组后面的，加这一句话，表示开始babel缓存</p>
+<h3 id="（2）文件资源缓存（优化代码运行）"><a href="#（2）文件资源缓存（优化代码运行）" class="headerlink" title="（2）文件资源缓存（优化代码运行）"></a>（2）文件资源缓存（优化代码运行）</h3><p>hash:每次webpack打包生成的唯一hash值</p>
+<p>问题：由于js与css同时使用一个hash值，如果重新打包，会导致所有打包失效</p>
+<p>但是可能只是改变了一个文件</p>
+<p>chunkhash:根据chunk生成的hash值，如果打包同一个chunk，那么打包一样</p>
+<p>问题：js与csshash值还是一样的</p>
+<p>因为css是在js文件中被引入的，所有属于一个chunk（一个入口文件的所有依赖css，js文件，这些与入口形成一个代码块–chunk）</p>
+<p>contenthash：根据文件的内容生成hash’值，不同的文件内容hash值一定不一样</p>
+<p>—》让代码上线运行缓存更好用</p>
+<pre><code>  output:{
+    filename:'js/built.[contenthash:10].js',
+    path:resolve(__dirname,'build')
+},
+</code></pre>
+<h1 id="4、优化代码运行的性能"><a href="#4、优化代码运行的性能" class="headerlink" title="4、优化代码运行的性能"></a>4、优化代码运行的性能</h1><h2 id="1-缓存-hash-chunkhash-contenthash-见上"><a href="#1-缓存-hash-chunkhash-contenthash-见上" class="headerlink" title="1.缓存(hash-chunkhash-contenthash)  见上"></a>1.缓存(hash-chunkhash-contenthash)  见上</h2><h2 id="2-tree-shaking"><a href="#2-tree-shaking" class="headerlink" title="2.tree shaking"></a>2.tree shaking</h2><h3 id="使用：-1"><a href="#使用：-1" class="headerlink" title="使用："></a>使用：</h3><p>1.必须使用ES6模块化</p>
+<p>2.开启production环境</p>
+<p>主要在于去除无用的代码，，减少代码打包的体积</p>
+<h3 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h3><p> 在package.js”中配置sideEffects”:false，</p>
+<p>—》这代表所有代码都是没有副作用的—都可以进行tree shaking</p>
+<pre><code>问题：可能干掉css/@babel/polyfill被认为是副作用文件，被干掉
+</code></pre>
+<ul>
+<li><pre><code> 解决："sideEffects":["*.css","*.less"]
+</code></pre>
+</li>
+</ul>
+<h2 id="3-code-split-–代码分割"><a href="#3-code-split-–代码分割" class="headerlink" title="3.code split –代码分割"></a>3.code split –代码分割</h2><h3 id="1、通过entry进行文件输出，输出多个文件-多入口"><a href="#1、通过entry进行文件输出，输出多个文件-多入口" class="headerlink" title="1、通过entry进行文件输出，输出多个文件(多入口)"></a>1、通过entry进行文件输出，输出多个文件(多入口)</h3><h3 id="2、optimization设置"><a href="#2、optimization设置" class="headerlink" title="2、optimization设置"></a>2、optimization设置</h3><p>1.可以自动将node_module中的代码打包为一个chunk进行输出</p>
+<p>2.自动分析多入口chunk中，有没有公共文件，有的话单独打包为一个chunk<br>    optimization:{<br>        splitChunks:{<br>            chunks:”all”<br>        }<br>    },</p>
+<h3 id="3、使用js使文件单独打包："><a href="#3、使用js使文件单独打包：" class="headerlink" title="3、使用js使文件单独打包："></a>3、使用js使文件单独打包：</h3><pre><code>// 使后面的test.js进行单独打包
+ import (/* webpackChunkName:'test'*/'./test.js')
+ .then(({mul,count})=&gt;{
+     console.log(mul(2,5))
+ }).catch(()=&gt;{
+     console.log('文件加载失败')
+ })
+</code></pre>
+<p>这种使用js语法让<strong>某个</strong>文件打包为一个chunk</p>
+<p>即使用import的动态打包</p>
+<p>而webpackChunkName则是名字的固体规范否则是hash动态变化值</p>
+<h2 id="4-懒加载与预加载"><a href="#4-懒加载与预加载" class="headerlink" title="4.懒加载与预加载"></a>4.懒加载与预加载</h2><p>一个是真的不点击不加载，一个是等着其他加载完了，会偷偷加载</p>
+<p>在原js文件中设置、</p>
+<p>预加载：</p>
+<pre><code>import (/* webpackChunkName:'test',webpackPrefetch:true */'./test').then(({mul}) =&gt;{
+    console.log(mul(4,6))
+})
+</code></pre>
+<p>懒加载：</p>
+<pre><code>import (/* webpackChunkName:'test'*/'./test').then(({mul}) =&gt;{
+    console.log(mul(4,6))
+})
+</code></pre>
+<p>合理使用prefetch可以防止出现点击延迟的问题，等着浏览器空闲时加载也是可以的</p>
+<p>当然了延迟也是第一次延迟，只会内存中就有了，不延迟了</p>
+<h1 id="5、其他设置"><a href="#5、其他设置" class="headerlink" title="5、其他设置"></a>5、其他设置</h1><h2 id="1-pwa-—-渐进式网路开发应用程序（保障离线也可以访问）"><a href="#1-pwa-—-渐进式网路开发应用程序（保障离线也可以访问）" class="headerlink" title="1.pwa — 渐进式网路开发应用程序（保障离线也可以访问）"></a>1.pwa — 渐进式网路开发应用程序（保障离线也可以访问）</h2><p>实现：</p>
+<p>workbox实现—》webpack体现为workbox-webpack-plugin</p>
+<p>代码：</p>
+<pre><code>const WorkboxWebpackPlugin = require('workbox-webpack-plugin')
+ new WorkboxWebpackPlugin.GenerateSW({
+            // 先设置配置,作用：
+            /*
+            1、帮助serviceworker快速启动
+            2、删除旧的serviceworker
+
+            最后生成一个serviceWorker配置文件，之后通过它在入口js文件注册
+            */
+          clientsClaim:true,
+          skipWaiting:true
+        })
+</code></pre>
+<p>js入口:</p>
+<pre><code>// 注意这里的servWorker的写法为小驼峰式，第一个小写，其余为大写 
+if('serviceWorker' in navigator){
+window.addEventListener('load',()=&gt;{
+    // 这个文件之后由webpack中的生成
+    navigator.serviceWorker.register('/service-worker.js').then(()=&gt;{
+        // 通过then与catch判断是否成功
+        console.log('sw注册成功')
+    })
+    .catch(()=&gt;{
+        console.log('注册sw失败')
+    })
+})
+}
+// 成功之后，会在f12中的application中生成一个service Workers
+//          且Cache中的Cache Storage中会有对应文件的缓存
+</code></pre>
+<h3 id="配置问题"><a href="#配置问题" class="headerlink" title="配置问题"></a>配置问题</h3><p>1、eslint不认识window，navigator全局变量</p>
+<p> 解决：修改package。json中的eslintConfig配置</p>
+<pre><code>"env":{
+      "browser":true  //支持浏览器全局变量,browser表示浏览器
+}
+</code></pre>
+<p>2.sw必须运行在服务器上  –nodejs</p>
+<p> npm i serve -g   快速创建一个静态资源服务器</p>
+<p> 多了一个指令：– serve -s build  –build表示运行代码的目录</p>
+<p> 之后：会启动一个服务器，将build目录下的静态资源进行部署</p>
+<h2 id="2-externals-–cdn引入文件，不会打包"><a href="#2-externals-–cdn引入文件，不会打包" class="headerlink" title="2.externals  –cdn引入文件，不会打包"></a>2.externals  –cdn引入文件，不会打包</h2><p>在webpack.congfig.js中设置：</p>
+<pre><code>externals:{
+    // 忽略的库名  --npm包名
+    jquery:'jQuery'
+    //目的就是禁止，jquery被打包，但是注意：需要在src中的html中进行引入
+    // 加一个cdn链接引入，拒绝进行打包
+}
+</code></pre>
+<p>表示对某文件的禁用</p>
+<p>之后需要在使用的文件中，用cdn方式进行引入</p>
+<h2 id="3-dll"><a href="#3-dll" class="headerlink" title="3.dll"></a>3.dll</h2><p>当第三方文件需要对文件进行打包引入时，使用dll对文件进行单独打包，注意开始先运行一下webpack.dll.js(webpack –config webpack.dll.js)</p>
+<p>webpack.dll.js:</p>
+<pre><code>const {resolve} = require('path')
+const webpack = require('webpack')
+
+module.exports = {
+entry:{
+    // 最终打包生成的[name]  --&gt;jquery
+    // ['jquery'] --&gt;要打包的库是jquery
+    jquery:['jquery']
+},
+output:{
+    filename:'[name].js',
+    //通过resolve进行绝对路径的拼接
+    path: resolve(__dirname,'dll'),
+    library:'[name]_[hash]',//打包的库向外暴露的内容叫啥名字
+},
+// 前面专门为了打报jquery
+
+plugins:[
+    // 打包生成一个manifest.json  ----》提供一个jquery映射关系
+    new webpack.DllPlugin({
+        name:'[name]_[hash]',  //映射哭的暴露的内容是什么
+        path:resolve(__dirname,'dll/manifest.json')  //输出路径
+    })
+],
+mode:'production'
+}
+</code></pre>
+<p>之后在webpack.config.js文件中进行声明（那些忽略,那些进行引入）</p>
+<pre><code>    // 告诉webpack那些库不参与打包，同时使用时的库也需要修改
+    new webpack.DllReferencePlugin({
+        manifest: resolve(__dirname, 'dll/manifest.json')    //忽略jquery
+    }),
+    // 将某个文件打包输出出去，并在html中自动引入修改
+    new AddssetHtmlWebpackPlugin({
+        filepath:resolve(__dirname,'dll/jquery.js')        //将之前打包的引入
+    })
+</code></pre>
+
+    
+
+    
+
+    
+
+  </div>
+  <div class="article-info article-info-index">
+    
+    
+    
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/webpack学习//" class="article-tag-list-link color5">webpack学习</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+
+    
+    <p class="article-more-link">
+      <a class="article-more-a" href="/2021/04/26/webpack%E5%AD%A6%E4%B9%A0/webpack%E7%8E%AF%E5%A2%83%E4%BC%98%E5%8C%96/">展开全文 >></a>
+    </p>
+    
+
+    
+    <div class="clearfix"></div>
+  </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+    <article id="post-webpack学习/webpacks生产环境配置" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+  
+  
+    <h1 itemprop="name">
+	
+	  <a class="article-title" href="/2021/04/26/webpack%E5%AD%A6%E4%B9%A0/webpacks%E7%94%9F%E4%BA%A7%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE/" target="_blank">webpack生产环境配置</a>
+  
+    </h1>
+  
+
+
+  
+  
+<a href="/2021/04/26/webpack%E5%AD%A6%E4%B9%A0/webpacks%E7%94%9F%E4%BA%A7%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE/" class="archive-article-date">
+        <time datetime="2021-04-26T01:59:12.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-04-26</time>
+</a>
+
+  
+  
+    
+
+  
+  </header>
+  
+  <div class="article-entry" itemprop="articleBody">
+    
+    
+    
+    <h1 id="webpack生产环境的配置"><a href="#webpack生产环境的配置" class="headerlink" title="webpack生产环境的配置"></a>webpack生产环境的配置</h1><p>主要内容就是。实现css的单独提取，把js，css，html文件实现压缩以及语法的检查：</p>
+<h2 id="代码："><a href="#代码：" class="headerlink" title="代码："></a>代码：</h2><pre><code>const {resolve} = require('path')
+const MiniCssExtractPlugin = require('mini-css-extract-plugin')
+const yasucss = require("optimize-css-assets-webpack-plugin")
+const HtmlWebpackPlugin = require('html-webpack-plugin')
+
+//定义nodejs环境变量，确定browlist的环境
+process.env.NODE_ENV = 'production'
+
+// 减少代码的复用
+const commonCssLoader = [
+MiniCssExtractPlugin.loader,
+'css-loader',
+{
+    loader: 'postcss-loader',
+    options: {
+        ident: 'postcss',
+        plugins: () =&gt; [
+            // 使用postcss的插件
+            require('postcss-preset-env')()
+        ]
+    }
+}
+]
+
+// commonjs语法暴露对象
+module.exports = {
+entry: './src/js/index.js',
+output: {
+    filename: 'js/built.js',
+    path: resolve(__dirname, 'build')
+},
+module: {
+    rules: [{
+            test: /\.css$/,
+            use: [
+                // 把css提取为单独文件
+                // 还需要对browserslist的定义
+               ...commonCssLoader
+
+            ]
+        },
+        {
+
+            test: /\.less$/,
+            use: [
+                // 把css提取为单独文件
+                ...commonCssLoader,
+                'less-loader'
+            ]
+        },
+        // 正常来说一个文件要被一个loader处理
+        //一旦被多个loader处理要明白,loader的执行顺序 :
+        // 先执行eslint,在执行babel
+
+        //js语法配置:
+        {
+            // package.json中的eslintConfig进行配置写法  --airbnb
+            test: /\.js$/,
+            exclude: /node_modules/,
+            // 下面表示优先执行
+            enforce: 'pre',
+            loader: 'eslint-loader',
+            options: {
+                fix: true
+            }
+        },
+        {
+            test: /\.js$/,
+            exclude: /node_modules/,
+            loader: 'babel-loader',
+            options: {
+                presets: [
+                  [ 
+                       '@babel/preset-env',
+                    {
+                        //值进行按需加载
+                        useBuiltIns: 'usage',
+                            //指定corejs的版本
+                        corejs: {
+                            version: 3
+                        },
+                        targets: {
+                            chrome: '60',
+                            firefox: '50'
+                        }
+                    }
+                ]
+                ]
+            }
+        },
+        {
+            test: /\.(jpg|png|gif)/,
+            loader: 'url-loader',
+            options: {
+                limit: 8 * 1024,
+                name: '[hash:10].[ext]',
+                // 输出路径
+                outputPath: 'imgs',
+                esModule: false
+            }
+        },
+        {
+            test: /\.html$/,
+            loader: 'html-loader'
+        },
+        {
+            exclude: /\.(js|css|less|html|jpg|png|gif)/,
+            loader: 'file-loader',
+            options: {
+                outputPath: 'media'
+            }
+        }
+    ]
+},
+
+plugins: [
+    new MiniCssExtractPlugin({
+        // 修改路径
+        filename: 'css/built.css'
+    }),
+    new yasucss(),
+    new HtmlWebpackPlugin({
+        template: "./src/index.html",
+        //压缩html
+        minify: {
+        minify:{
+            //移除空格
+            collapseWhitespace:true,
+            // 移除注释
+            removeComments:true
+        }
+        }
+    })
+
+],
+mode: "production"
+}
+</code></pre>
+<h2 id="2、解释"><a href="#2、解释" class="headerlink" title="2、解释"></a>2、解释</h2><h3 id="（1）css的单独打包"><a href="#（1）css的单独打包" class="headerlink" title="（1）css的单独打包"></a>（1）css的单独打包</h3><p>主要通过mini-css-extract-plugin实现，并且用它来代替原来的style loader ：</p>
+<pre><code>const MiniCssExtract = require('mini-css-extract-plugin')
+
+// 'style-loader',
+// 这里原本表示创建style标签，把css存入js文件中
+   MiniCssExtract.loader,
+   // 上面的Mini取代style-loader保证取代js中，变为css文件,单独提取css，保证速度
+</code></pre>
+<h3 id="（2）css兼容性处理："><a href="#（2）css兼容性处理：" class="headerlink" title="（2）css兼容性处理："></a>（2）css兼容性处理：</h3><p>css兼容性处理：postcss –需要postcss-loader ，</p>
+<p>还需要插件postcss-preset-env用于帮助postcss识别某些环境，从而加载指定的配置，用于保证兼容性<br>帮post-css找到package.json中的browserslist里的配置，通过配置加载指定的css兼容样式.</p>
+<p>package.json的设置：</p>
+<pre><code> "browserslist":{
+    "development":[
+        "last 1 chrome version",
+        "last 1 firefox version",
+        "last 1 safari version"
+    ],
+    "production":[
+        "&gt;0.2%",
+        //   后面表示不要什么浏览器
+         "not dead",
+        "not op_mini all"
+    ]   
+ }
+</code></pre>
+<p>postcss实际处理代码见上面例子，需要在loader中写明，并且在plugins中注明打包的位置</p>
+<h3 id="3、压缩css"><a href="#3、压缩css" class="headerlink" title="3、压缩css"></a>3、压缩css</h3><p>两步：<br>    const optimzieCssAssetsWebpackPlugin = require(‘optimize-css-assets-webpack-plugin’)</p>
+<pre><code>new optimzieCssAssetsWebpackPlugin()
+</code></pre>
+<h3 id="4、js语法检查"><a href="#4、js语法检查" class="headerlink" title="4、js语法检查"></a>4、js语法检查</h3><h4 id="目的："><a href="#目的：" class="headerlink" title="目的："></a>目的：</h4><p>语法检查：保证工作时，写的代码大致一样 —》eslint，</p>
+<p>此时需要eslint-loader，与eslint库</p>
+<p>注意：只检查自己写的源代码，第三方的库不用检查</p>
+<p>注意在package.json中需要进行设置</p>
+<pre><code>"eslintConfig":{
+    "extends":"airbnb-base"   //确定配置
+ }
+</code></pre>
+<p>使用的是airbnb规则，需要 eslint-config-airbnb-base eslint eslint-plugin-import</p>
+<p>loader中的内容见上</p>
+<h3 id="4、js兼容性处理-—高级语法的简化"><a href="#4、js兼容性处理-—高级语法的简化" class="headerlink" title="4、js兼容性处理  —高级语法的简化"></a>4、js兼容性处理  —高级语法的简化</h3><p>首先注意当loader的引入是use方法时,<strong>不能进行options设置,否则报错</strong></p>
+<p>只能通过单个loader设置: loader:’babel-loader’,才可以设置option参数</p>
+<h4 id="进行兼容性处理的方法及压缩"><a href="#进行兼容性处理的方法及压缩" class="headerlink" title="进行兼容性处理的方法及压缩"></a>进行兼容性处理的方法及压缩</h4><pre><code>js兼容性处理：babel-loader
+</code></pre>
+<p>1、它的配置的包还有@babel/preset-env，@babel/core<br>把es6相关东西变为es5的东西<br>问题：只能修改基础语法~~，例如Promise不可以改变</p>
+<p>2、全部js兼容性处理 –》@babel/polyfill</p>
+<p>这个在原文件中通过import引用即可<br>问题：由于我只需要解决部分兼容性问题，但是全部引入，所以会增大代码的体积</p>
+<p>3、需要做兼容性处理的就做：按需加载 –》core-js</p>
+<p>具体代码见上</p>
+<h4 id="压缩-在production环境下会自动进行压缩"><a href="#压缩-在production环境下会自动进行压缩" class="headerlink" title="压缩:在production环境下会自动进行压缩"></a>压缩:在production环境下会自动进行压缩</h4>
+    
+
+    
+
+    
+
+  </div>
+  <div class="article-info article-info-index">
+    
+    
+    
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/webpack学习//" class="article-tag-list-link color5">webpack学习</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+
+    
+    <p class="article-more-link">
+      <a class="article-more-a" href="/2021/04/26/webpack%E5%AD%A6%E4%B9%A0/webpacks%E7%94%9F%E4%BA%A7%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE/">展开全文 >></a>
+    </p>
+    
+
+    
+    <div class="clearfix"></div>
+  </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
     <article id="post-webpack学习/webpack开发环境配置" class="article article-type-post  article-index" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -1793,520 +2370,6 @@ while (true) {
 
 
   
-    <article id="post-js经典问题/扩展运算符与深拷贝" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-  
-  
-    <h1 itemprop="name">
-	
-	  <a class="article-title" href="/2021/04/03/js%E7%BB%8F%E5%85%B8%E9%97%AE%E9%A2%98/%E6%89%A9%E5%B1%95%E8%BF%90%E7%AE%97%E7%AC%A6%E4%B8%8E%E6%B7%B1%E6%8B%B7%E8%B4%9D/" target="_blank">扩展运算符与深拷贝</a>
-  
-    </h1>
-  
-
-
-  
-  
-<a href="/2021/04/03/js%E7%BB%8F%E5%85%B8%E9%97%AE%E9%A2%98/%E6%89%A9%E5%B1%95%E8%BF%90%E7%AE%97%E7%AC%A6%E4%B8%8E%E6%B7%B1%E6%8B%B7%E8%B4%9D/" class="archive-article-date">
-        <time datetime="2021-04-03T12:15:47.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-04-03</time>
-</a>
-
-  
-  
-    
-
-  
-  </header>
-  
-  <div class="article-entry" itemprop="articleBody">
-    
-    
-    
-    <h1 id="1、扩展运算符-…"><a href="#1、扩展运算符-…" class="headerlink" title="1、扩展运算符 …"></a>1、扩展运算符 …</h1><h2 id="（1）介绍"><a href="#（1）介绍" class="headerlink" title="（1）介绍"></a>（1）介绍</h2><p>三个点（…）真名叫扩展运算符，是在ES6中新增加的内容，它可以在函数调用/数组构造时，将数组表达式或者string在<strong>语法层面展开</strong>；还可以在构造字面量对象时将对象表达式按照key-value的方式展开</p>
-<pre><code>字面量一般指[1,2,3]或者{name:'chuichui'}这种简洁的构造方式,多层嵌套的数组和对象三个点就无能为力了
-</code></pre>
-<p>样例：</p>
-<pre><code>var obj = {
-    a:{
-        b:'c',
-        d:'d'
-    }
-}
-var obj1 = {
-    b:'b'
-}
-console.log({...obj})                a:{b:'c',d:'d'}
-console.log({...obj1})               {b:'b'}
-
-var number = [1,2,3,4,5,6]
-console.log(...number) //1 2 3 4 5 6
-</code></pre>
-<p>可以理解为把外层的衣服脱掉，比如脱掉外面的obj1</p>
-<h2 id="（2）应用"><a href="#（2）应用" class="headerlink" title="（2）应用"></a>（2）应用</h2><h3 id="a、复制作用："><a href="#a、复制作用：" class="headerlink" title="a、复制作用："></a>a、复制作用：</h3><pre><code>//数组的复制
-var arr1 = ['hello']
-var arr2 =[...arr1]
-arr2 // ['hello']
-//对象的复制
-var obj1 = {name:'chuichui'}
-var obj2 ={...arr}
-ob12 //  {name:'chuichui'}
-</code></pre>
-<h3 id="b、合并作用"><a href="#b、合并作用" class="headerlink" title="b、合并作用"></a>b、合并作用</h3><pre><code>//数组的合并
-var arr1 = ['hello']
-var arr2 =['chuichui']
-var mergeArr = [...arr1,...arr2]
-mergeArr  // ['hello','chuichui']
-// 对象分合并
-var obj1 = {name:'chuichui'}
-var obj2 = {height:176}
-var mergeObj = {...obj1,...obj2}
-mergeObj // {name: "chuichui", height: 176}
-</code></pre>
-<h3 id="c、字符串转数组"><a href="#c、字符串转数组" class="headerlink" title="c、字符串转数组"></a>c、字符串转数组</h3><pre><code>var arr1 = [...'hello']
-arr1 // ["h", "e", "l", "l", "o"]
-</code></pre>
-<p>注意扩展运算符外面的，表示转化之后的类型，[]就表示转化为数组</p>
-<pre><code>function f(v,w,x,y,z){ }
-var args = [2,3]
-f(1,...args,4,...[5])
-由于这里展开了，所以相当于传入了1，2，3，4，5
-</code></pre>
-<h2 id="注意："><a href="#注意：" class="headerlink" title="注意："></a>注意：</h2><p>扩展运算符是实现的拷贝并不是<strong>完全</strong>的深拷贝:</p>
-<pre><code>  var obj = {
-   a:'a',
-   b:[2,3]
-   }
-   var obj1 = obj
-   var obj2 = {...obj}
-   obj.a = 'b'
-   obj.b[1]=4
-   console.log(obj1.a)     //b
-   console.log(obj2.a)     //a
-   console.log( obj1.b[1])   //4
-   console.log( obj2.b[1])   //4
-</code></pre>
-<p>所以这时候当其中的元素是<strong>一维元素</strong>是深拷贝，否则为浅拷贝</p>
-<p>这类似于对象的</p>
-<p>####Object.assign(target，…sources)方法：</p>
-<p>把可枚举将所有可枚举属性的值从一个或多个源对象复制到目标对象，且<strong>返回目标对象</strong></p>
-<pre><code>Object.assign(target, ...sources)
-</code></pre>
-<p>target ： 目标对象</p>
-<p>sources：源对象</p>
-<pre><code>  var obj = {
-    name:'a',
-    info:{
-        b:'b',
-        c:'c'
-    }
-}
-let obj1 = Object.assign({},obj)
-obj.info.b = 'bb'
-console.log(obj1.info.b)    //bb
-</code></pre>
-<p>数组的</p>
-<p>####concat(arr1, arr2,….)连接并返回</p>
-<p>当使用 a.concat(arr)时，注意a<strong>必须是数组</strong></p>
-<p>后面的arr等等会拼接在a的<strong>后面</strong></p>
-<p><a target="_blank" rel="noopener" href="https://imgtu.com/i/cnxc1e"><img src="https://z3.ax1x.com/2021/04/03/cnxc1e.png" alt="cnxc1e.png"></a></p>
-<h4 id="arr-slice-idx1-idx2-方法"><a href="#arr-slice-idx1-idx2-方法" class="headerlink" title="arr.slice(idx1, idx2)方法"></a>arr.slice(idx1, idx2)方法</h4><p>用于从数组读取从idx1到idx2部分，如果不加参数就是直接复制</p>
-<p>当然了如果idx2大于等于arr.length</p>
-<pre><code>   var obj = [1,2,3]
-   obj1 = obj
-   obj2 = obj.slice()
-   obj.push(4)
-   console.log(obj1)   //1.2.3.4
-   console.log(obj2)   //1,2,3
-</code></pre>
-<h1 id="扩展：实现深拷贝"><a href="#扩展：实现深拷贝" class="headerlink" title="扩展：实现深拷贝"></a>扩展：实现深拷贝</h1><h2 id="1、递归方式："><a href="#1、递归方式：" class="headerlink" title="1、递归方式："></a>1、递归方式：</h2><pre><code> var obj = {
-    a: 'a',
-    b: [2, 3]
-}
-var obj3 = deepClone(obj)
-obj.b[1]=4
-console.log(obj3.b[1])   //4
-
-function deepClone(obj) {
-    let objClone = Array.isArray(obj) ? [] : {};
-    if (obj &amp;&amp; typeof obj === 'object') {
-        for (let key in obj) {
-            if (obj[key] &amp;&amp; typeof obj[key] === 'object') {
-                objClone[key] = deepClone(obj[key]);
-            } else {
-                objClone[key] = obj[key]
-            }
-        }
-    }
-    return objClone;
-}
-</code></pre>
-<h2 id="2、json对象实现："><a href="#2、json对象实现：" class="headerlink" title="2、json对象实现："></a>2、json对象实现：</h2><pre><code>var obj = {
-    a: 'a',
-    b: [2, 3]
-}
-var obj1 = deepClone(obj)
-obj.b[1]=4
-console.log(obj1.b[1])   //4
-
-function deepClone2(obj) {
-      let _obj = JSON.stringify(obj),
-      return JSON.parse(_obj);
-}
-</code></pre>
-<p>###JSON代码分析：</p>
-<pre><code>JSON.stringify(obj) --- 先转化为json字符串：
-</code></pre>
-<p>语法：</p>
-<pre><code> JSON.stringify(value[, replacer[, space]])（后面一个参数一般不用）
-</code></pre>
-<h4 id="value"><a href="#value" class="headerlink" title="value:"></a>value:</h4><p>必需， 要转换的 JavaScript 值（通常为对象或数组）。</p>
-<p>####replacer:<br>可选。用于转换结果的函数或数组。</p>
-<p>如果 replacer 为函数，则 JSON.stringify 将调用该函数，并传入每个成员的键和值。使用返回值而不是原始值。如果此函数返回 undefined，则排除成员。根对象的键是一个空字符串：””。</p>
-<p>如果 replacer 是一个数组，则仅转换该数组中具有键值的成员。成员的转换顺序与键在数组中的顺序一样。</p>
-<p>####space:<br>可选，文本添加缩进、空格和换行符，如果 space 是一个数字，则返回值文本在每个级别缩进指定数目的空格，如果 space 大于 10，则文本缩进 10 个空格。space 也可以使用非数字，如：\t</p>
-<pre><code>JSON.parse(_obj);  ---把JSON字符串转化为js对象
-</code></pre>
-<h4 id="语法："><a href="#语法：" class="headerlink" title="语法："></a>语法：</h4><pre><code>JSON.parse(text[, reviver])
-</code></pre>
-<p>参数说明：</p>
-<p>text:必需， 一个有效的 JSON 字符串。</p>
-<p>reviver: 可选，一个转换结果的函数， 将为对象的每个成员调用此函数。</p>
-
-    
-
-    
-
-    
-
-  </div>
-  <div class="article-info article-info-index">
-    
-    
-    
-	<div class="article-category tagcloud">
-		<i class="icon-book icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/js经典问题//" class="article-tag-list-link color2">js经典问题</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-
-    
-    <p class="article-more-link">
-      <a class="article-more-a" href="/2021/04/03/js%E7%BB%8F%E5%85%B8%E9%97%AE%E9%A2%98/%E6%89%A9%E5%B1%95%E8%BF%90%E7%AE%97%E7%AC%A6%E4%B8%8E%E6%B7%B1%E6%8B%B7%E8%B4%9D/">展开全文 >></a>
-    </p>
-    
-
-    
-    <div class="clearfix"></div>
-  </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
-    <article id="post-js经典问题/迭代器与生成器" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-  
-  
-    <h1 itemprop="name">
-	
-	  <a class="article-title" href="/2021/04/02/js%E7%BB%8F%E5%85%B8%E9%97%AE%E9%A2%98/%E8%BF%AD%E4%BB%A3%E5%99%A8%E4%B8%8E%E7%94%9F%E6%88%90%E5%99%A8/" target="_blank">迭代器与生成器</a>
-  
-    </h1>
-  
-
-
-  
-  
-<a href="/2021/04/02/js%E7%BB%8F%E5%85%B8%E9%97%AE%E9%A2%98/%E8%BF%AD%E4%BB%A3%E5%99%A8%E4%B8%8E%E7%94%9F%E6%88%90%E5%99%A8/" class="archive-article-date">
-        <time datetime="2021-04-02T05:10:46.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-04-02</time>
-</a>
-
-  
-  
-    
-
-  
-  </header>
-  
-  <div class="article-entry" itemprop="articleBody">
-    
-    
-    
-    <h1 id="迭代器与生成器"><a href="#迭代器与生成器" class="headerlink" title="迭代器与生成器"></a>迭代器与生成器</h1><p>首先为了处理集合中的每一项，JS可以通过简单的for foreach,还有如下方法:</p>
-<h3 id="map-："><a href="#map-：" class="headerlink" title="map()："></a>map()：</h3><pre><code>var numbers = [4, 9, 16, 25];
-
-function myFunction() {
-    x = document.getElementById("demo")
-    x.innerHTML = numbers.map(Math.sqrt);   /2，3，4，5
-}
-</code></pre>
-<p>map() 方法返回一个新数组，数组中的元素为原始数组元素调用函数处理后的值。</p>
-<p>map() 方法按照原始数组元素顺序依次处理元素。</p>
-<h3 id="filter"><a href="#filter" class="headerlink" title="filter()"></a>filter()</h3><pre><code>var ages = [32, 33, 16, 40];
-
-function checkAdult(age) {
-    return age &gt;= 18;
-}
-
-function myFunction() {
-    document.getElementById("demo").innerHTML = ages.filter(checkAdult);
-}
-</code></pre>
-<p>这是返回<strong>原数组中达到要求的数组</strong></p>
-<h3 id="array-comprehensions-数组推导式"><a href="#array-comprehensions-数组推导式" class="headerlink" title="array comprehensions(数组推导式)"></a>array comprehensions(数组推导式)</h3><p>而且在JavaScript 1.7中，迭代器和生成器在JavaScript核心语法中带来了新的迭代机制，而且还提供了定制 for…in 和 for each 循环行为的机制。</p>
-<h1 id="1、迭代器"><a href="#1、迭代器" class="headerlink" title="1、迭代器"></a>1、迭代器</h1><h2 id="（1）介绍"><a href="#（1）介绍" class="headerlink" title="（1）介绍"></a>（1）介绍</h2><p>是一个每次访问集合序列中一个<strong>元素的对象</strong>，并跟踪该序列中迭代的当前位置。</p>
-<p>在JavaScript中迭代器是一个对象，这个对象提供了一个 next() 方法（必须实现），next() 方法返回序列中的下一个元素，即为IteratorReault对象。此对象具有value与done两个属性，一个表示值，一个表示是否结束：</p>
-<pre><code>ab = [23,4,5]
-console.log(ab[Symbol.iterator]().next())  //{value: 23, done:false}
-</code></pre>
-<p>当序列中所有元素都遍历完成时，该方法抛出 StopIteration 异常，done也变为true。</p>
-<p>[Symbol.iterator]表示可迭代属性，可以作为一个工厂函数使用</p>
-<p>迭代器对象一旦被建立，就可以通过显式的重复调用next()，或者使用JavaScript的 for…in 和 for each 循环隐式调用。</p>
-<p>但是注意迭代器是一次性的!!!</p>
-<pre><code>ab = [23,4,5]
- let s = ab[Symbol.iterator]()
-for(const i of s){
-    console.log(i)
-}
-console.log("-----")
-//这个s已经迭代完了，这就反映了迭代器的一次性遍历的特点
-for(const i of s){
-    console.log(i)
-}
-</code></pre>
-<h2 id="（2）创建"><a href="#（2）创建" class="headerlink" title="（2）创建"></a>（2）创建</h2><p>简单的对对象和数组进行迭代的迭代器可以使用 [Symbol.iterator]工厂函数：</p>
-<pre><code>let lang = [23,34]
-//var lang = { name: 'JavaScript', birthYear: 1995 };
-//对象是错误的
-var it = lang[Symbol.iterator];
-</code></pre>
-<p>之后可以通过next进行操作</p>
-<pre><code>var pair = it.next(); 
-</code></pre>
-<p>如果进想输出key值，则可以传入第二个参数</p>
-<pre><code> var langs = ['JavaScript', 'Python', 'Haskell'];
-var it = langs[Symbol.iterator]();
-for (const pair of it)
-{
-    console.log(pair); //每次迭代输出 [index, language]
-}
-</code></pre>
-<p>此时把true当作<strong>数组索引</strong></p>
-<p>##（3） 声明自定义迭代器</p>
-<p>实现Iterable接口的类型有:</p>
-<pre><code>字符串
-数组
-映射
-集合
-arguments对象
-NodeList等DOM集合类型
-</code></pre>
-<h3 id="注意-没有Object"><a href="#注意-没有Object" class="headerlink" title="注意:没有Object"></a>注意:没有Object</h3><p>##（4）声明自定义迭代器</p>
-<p>一些代表元素集合的对象应该用一种指定的方式来迭代。例如：</p>
-<p>1.迭代一个表示范围(Range)的对象应该一个接一个的返回这个范围包含的数字</p>
-<p>2.一个树的叶子节点可以使用深度优先或者广度优先访问到</p>
-<p>3.迭代一个代表数据库查询结果的对象应该一行一行的返回，即使整个结果集尚未全部加载到一个单一数组</p>
-<p>4.作用在一个无限数学序列(像斐波那契序列)上的迭代器应该在不创建无限长度数据结构的前提下一个接一个的返回结果</p>
-<p>JavaScript 允许你写<strong>自定义迭代逻辑</strong>的代码，并把它作用在一个对象上</p>
-<h3 id="迭代器缺点："><a href="#迭代器缺点：" class="headerlink" title="迭代器缺点："></a>迭代器缺点：</h3><p>虽然自定义的迭代器是一种很有用的工具，但是创建它们的时候要仔细规划，因为需要显式的维护它们的内部状态。于是我们引入了：</p>
-<h1 id="2、生成器（创建迭代器的更好的方式）"><a href="#2、生成器（创建迭代器的更好的方式）" class="headerlink" title="2、生成器（创建迭代器的更好的方式）"></a>2、生成器（创建迭代器的更好的方式）</h1><p>生成器提供了很强大的功能：它允许你定义一个包含自有迭代算法的函数， 同时它可以<strong>自动维护</strong>自己的状态。</p>
-<p>(因为它的默认的迭代器是自引用的)</p>
-<p>生成器形式是一个函数,函数名称前面加”星号”即可,<strong>只要是自定义函数的地方,就可以定义生成器</strong>,除非是箭头函数</p>
-<pre><code>let try = function *(){}
-</code></pre>
-<h2 id="1-执行过程"><a href="#1-执行过程" class="headerlink" title="(1) 执行过程"></a>(1) 执行过程</h2><p>调用生成器函数会产生生成器对象,其一开始为暂停状态,它也有Iterator接口和next方法,这个next方法是其<strong>开始的标志</strong>.</p>
-<pre><code>function* gen(){
-    console.log('lala')
-    return '1'
-}
-let as = gen()
-as.next()
-生成器函数初次只有在用next之后才会开始
-</code></pre>
-<p>且next()返回值类似于迭代器,也是value与done,value表示的是函数的返回值</p>
-<h3 id="yeild—-停止生成器直到下次next"><a href="#yeild—-停止生成器直到下次next" class="headerlink" title="yeild—-停止生成器直到下次next"></a>yeild—-停止生成器直到下次next</h3><p>每次调用 generator-iterator 的 next() 方法，函数体就会执行到下一个 yield 表达式，然后返回它的结果。</p>
-<div style="color: red; font-size: 16px;">使用yield关键字退出的生成器会在done:flase的状态,而return出去的则是 done:true</div>
-
-<p>当函数结束或者碰到 return 语句，一个 StopIteration 异常会被抛出。 例子：</p>
-<p>function *simpleGenerator(){<br>      yield “first”;<br>      yield “second”;<br>      yield “third”;<br>      for (var i = 0; i &lt; 3; i++)<br>        yield i;<br>    }</p>
-<pre><code>var g = simpleGenerator();
-console.log(g.next()); //输出 "first",done:false
-console.log(g.next()); //输出 "second"done:false
-console.log(g.next()); //输出 "third"done:false
-console.log(g.next()); //输出 0,done:false
-console.log(g.next()); //输出 1,done:false
-console.log(g.next()); //输出 2,done:false
-console.log(g.next()); //抛出 StopIteration 异常
-</code></pre>
-<h3 id="注意-1-yield必须直接位于生成器定义函数中-不可嵌套"><a href="#注意-1-yield必须直接位于生成器定义函数中-不可嵌套" class="headerlink" title="注意:1.yield必须直接位于生成器定义函数中,不可嵌套"></a>注意:1.yield必须直接位于生成器定义函数中,不可嵌套</h3><pre><code>function* fun(){    
-function a(){
-    yield   ---无效    
-}    
-    }     
-</code></pre>
-<h3 id="2-yield可以用于输入输出"><a href="#2-yield可以用于输入输出" class="headerlink" title="2.yield可以用于输入输出"></a>2.yield可以用于输入输出</h3><p>yeild会接收给next方法的第一个值,但是<strong>第一次调用next()时,里面的值,不会被调用,相当于开始执行</strong></p>
-<pre><code> function* gens(lala){
-    console.log(lala)
-//如果第一个就输出yield则啥都没有
-    console.log(yield)
-    console.log(yield)
-}
-let gun = gens('foo')
-gun.next('123')  //foo
-gun.next('555')    //555
-gun.next('52353255')   //52353255
-</code></pre>
-<p>作为输入与输出的yield</p>
-<pre><code> function * fun(){
-    return yield 'foo'
-    // 这个foo相当于开始第一个参数，由于第一个next无效
-}
-let aaaa = fun()
-console.log(aaaa.next('asdsad')) //第一个参数没有用
-console.log(aaaa.next('asd'))
-</code></pre>
-<h3 id="（3）高级特性-yield参数的加强—星号"><a href="#（3）高级特性-yield参数的加强—星号" class="headerlink" title="（3）高级特性 yield参数的加强—星号"></a>（3）高级特性 yield参数的加强—星号</h3><p>当使用星号加强时,使其可以迭代一个可迭代对象,从而产出一个值</p>
-<pre><code>  function* ntimes(n){
-    if(n&gt;0){
-        yield* ntimes(n-1); //实例话对象
-        yield n-1;    //减少值,也先当于打印返回
-    }
-}
-for(const i of ntimes(4)){
-        console.log(i)  //0 1 2 3
-    }
-</code></pre>
-<h3 id="4-关闭"><a href="#4-关闭" class="headerlink" title="4.关闭"></a>4.关闭</h3><p>生成器的关闭方式有return(),throw(),next()!!</p>
-<h4 id="对于return-方法"><a href="#对于return-方法" class="headerlink" title="对于return()方法"></a>对于return()方法</h4><p>对于它提供的值,就是<strong>终止对象的值</strong>,且之后再执行next(),只会改变done状态,但是value值<strong>不会传播</strong></p>
-<pre><code>function* fun(){
-    for(const x of [2,3,4,5]){
-        yield x
-    }
-}
-const x = fun()
-console.log(x.next())   //{value: 2, done: false}
-console.log(x.return(4))   //{value: 4, done: true}
-console.log(x.next())      //{value: undefined, done: true}
-</code></pre>
-<h4 id="对于throw-方法"><a href="#对于throw-方法" class="headerlink" title="对于throw()方法"></a>对于throw()方法</h4><p>它是往其中放置错误,如果错误被解决则可进行,但是会跳过本次yield值,否则则关闭</p>
-<pre><code>function* gen(){
-    for(const i of [2,3,4,5,45]){
-        try{
-            yield i;
-        }catch(e){
-            console.log(e)
-        }
-    }
-}
-const g = gen()
-    console.log(g.next())  //2
-     g.throw('fooo')   //catch得到打印为fooo
-    console.log(g.next())   //4
-</code></pre>
-<p>yield</p>
-<h2 id="扩展：基础Iterator的原生实现"><a href="#扩展：基础Iterator的原生实现" class="headerlink" title="扩展：基础Iterator的原生实现"></a>扩展：基础Iterator的原生实现</h2><pre><code>function myIterator(arr) {
-let index = 0;
-return {
-    next() {
-        return index &lt; arr.length ? {
-            value: arr[index++],
-            done: false//可以省略
-        } : {
-            value: undefined,//可以省略
-            done: true
-        }
-    }
-}
-}
-const it = myIterator([1, 2])
-console.log(it.next());// {value: 1, done: false}
-console.log(it.next());// {value: 2, done: false}
-console.log(it.next());// {value: undefined, done: true}
-</code></pre>
-
-    
-
-    
-
-    
-
-  </div>
-  <div class="article-info article-info-index">
-    
-    
-    
-	<div class="article-category tagcloud">
-		<i class="icon-book icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/js经典问题//" class="article-tag-list-link color2">js经典问题</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-
-    
-    <p class="article-more-link">
-      <a class="article-more-a" href="/2021/04/02/js%E7%BB%8F%E5%85%B8%E9%97%AE%E9%A2%98/%E8%BF%AD%E4%BB%A3%E5%99%A8%E4%B8%8E%E7%94%9F%E6%88%90%E5%99%A8/">展开全文 >></a>
-    </p>
-    
-
-    
-    <div class="clearfix"></div>
-  </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
   
     <nav id="page-nav">
       <a class="extend prev" rel="prev" href="/">&amp;laquo; Prev</a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><span class="space">&hellip;</span><a class="page-number" href="/page/6/">6</a><a class="extend next" rel="next" href="/page/3/">Next &amp;raquo;</a>
@@ -2442,6 +2505,10 @@ console.log(it.next());// {value: undefined, done: true}
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">初学</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">axios</a>
               </li>
             
             <div class="clearfix"></div>

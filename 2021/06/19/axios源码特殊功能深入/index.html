@@ -6,21 +6,21 @@
   <meta name="renderer" content="webkit">
   <meta http-equiv="X-UA-Compatible" content="IE=edge" >
   <link rel="dns-prefetch" href="https://useritem.github.io">
-  <title>第十六条日志 | hb的博客站</title>
+  <title>axios源码特殊功能深入 | hb的博客站</title>
   <meta name="generator" content="hexo-theme-yilia-plus">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   
-  <meta name="description" content="第十六天日志一、v-for把一个数组对应为一个元素。当采用v-for进行基于数组的列表渲染时，v-for指令需要使用item in items  形式的特殊语法，                                固定，但是in可以被of所替代 items 是源数据数组，而 item 则是被迭代的数组元素的别名。 普通用法：HTML: &lt;ul id&#x3D;&quot;example-1&quot;&gt;">
+  <meta name="description" content="axios拦截器与请求取消的模拟实现一、axios拦截器1、构造函数    function Axios(config){         this.config &#x3D; config;         this.interceptors &#x3D; {             request: new InterceptorManager(),             response: new Inter">
 <meta property="og:type" content="article">
-<meta property="og:title" content="第十六条日志">
-<meta property="og:url" content="https://useritem.github.io/2021/03/30/node%E4%B8%8Evue%E5%88%9D%E5%AD%A6/%E7%AC%AC%E5%8D%81%E5%85%AD%E6%9D%A1%E6%97%A5%E5%BF%97/index.html">
+<meta property="og:title" content="axios源码特殊功能深入">
+<meta property="og:url" content="https://useritem.github.io/2021/06/19/axios%E6%BA%90%E7%A0%81%E7%89%B9%E6%AE%8A%E5%8A%9F%E8%83%BD%E6%B7%B1%E5%85%A5/index.html">
 <meta property="og:site_name" content="hb的博客站">
-<meta property="og:description" content="第十六天日志一、v-for把一个数组对应为一个元素。当采用v-for进行基于数组的列表渲染时，v-for指令需要使用item in items  形式的特殊语法，                                固定，但是in可以被of所替代 items 是源数据数组，而 item 则是被迭代的数组元素的别名。 普通用法：HTML: &lt;ul id&#x3D;&quot;example-1&quot;&gt;">
+<meta property="og:description" content="axios拦截器与请求取消的模拟实现一、axios拦截器1、构造函数    function Axios(config){         this.config &#x3D; config;         this.interceptors &#x3D; {             request: new InterceptorManager(),             response: new Inter">
 <meta property="og:locale" content="en_US">
-<meta property="article:published_time" content="2021-03-30T13:01:07.000Z">
-<meta property="article:modified_time" content="2021-04-06T11:52:12.748Z">
+<meta property="article:published_time" content="2021-06-19T03:38:21.000Z">
+<meta property="article:modified_time" content="2021-06-19T03:39:33.595Z">
 <meta property="article:author" content="〃不枉俗尘づ">
-<meta property="article:tag" content="初学">
+<meta property="article:tag" content="axios">
 <meta name="twitter:card" content="summary">
   
     <link rel="alternative" href="/atom.xml" title="hb的博客站" type="application/atom+xml">
@@ -276,14 +276,14 @@
               class="anm-canvas"></canvas>
           </div>
           <div id="js-content" class="content-ll">
-            <article id="post-node与vue初学/第十六条日志" class="article article-type-post " itemscope itemprop="blogPost">
+            <article id="post-axios源码特殊功能深入" class="article article-type-post " itemscope itemprop="blogPost">
   <div class="article-inner">
     
       <header class="article-header">
   
   
     <h1 class="article-title" itemprop="name">
-      第十六条日志
+      axios源码特殊功能深入
     </h1>
   
 
@@ -295,8 +295,8 @@
               <i class="icon-smile icon"></i> 阅读数：<span id="busuanzi_value_page_pv"></span>次
         </span>
 
-<a href="/2021/03/30/node%E4%B8%8Evue%E5%88%9D%E5%AD%A6/%E7%AC%AC%E5%8D%81%E5%85%AD%E6%9D%A1%E6%97%A5%E5%BF%97/" class="archive-article-date">
-        <time datetime="2021-03-30T13:01:07.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-03-30</time>
+<a href="/2021/06/19/axios%E6%BA%90%E7%A0%81%E7%89%B9%E6%AE%8A%E5%8A%9F%E8%83%BD%E6%B7%B1%E5%85%A5/" class="archive-article-date">
+        <time datetime="2021-06-19T03:38:21.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-06-19</time>
 </a>
 
   
@@ -309,7 +309,7 @@
       <!-- 百度字体平台:http://fontstore.baidu.com/static/editor/index.html -->
       <i class="icon-statistics"></i>
       <span class="post-meta-item-text"> 字数统计:</span>
-      <span class="post-count">872字</span>
+      <span class="post-count">978字</span>
     </span>
   </span>
 
@@ -318,7 +318,7 @@
     <span class="post-meta-item-icon">
       <i class="icon-book icon"></i>
       <span class="post-meta-item-text"> 阅读时长≈</span>
-      <span class="post-count">3分</span>
+      <span class="post-count">4分</span>
     </span>
   </span>
 </div>
@@ -331,121 +331,150 @@
     
     
     
-    <h1 id="第十六天日志"><a href="#第十六天日志" class="headerlink" title="第十六天日志"></a>第十六天日志</h1><h2 id="一、v-for把一个数组对应为一个元素。"><a href="#一、v-for把一个数组对应为一个元素。" class="headerlink" title="一、v-for把一个数组对应为一个元素。"></a>一、v-for把一个数组对应为一个元素。</h2><p>当采用v-for进行基于数组的列表渲染时，v-for指令需要使用<strong>item in items</strong>  形式的特殊语法，<br>                                </p><p style="color: red;">固定，但是in可以被of所替代</p><p></p>
-<p>items 是源数据数组，而 item 则是被迭代的数组元素的别名。</p>
-<h3 id="普通用法："><a href="#普通用法：" class="headerlink" title="普通用法："></a>普通用法：</h3><p>HTML:</p>
-<pre><code>&lt;ul id="example-1"&gt;
-  &lt;li v-for="item in items" :key="item.message"&gt;
-{{ item.message }}
-  &lt;/li&gt;
-&lt;/ul&gt;
+    <h1 id="axios拦截器与请求取消的模拟实现"><a href="#axios拦截器与请求取消的模拟实现" class="headerlink" title="axios拦截器与请求取消的模拟实现"></a>axios拦截器与请求取消的模拟实现</h1><h2 id="一、axios拦截器"><a href="#一、axios拦截器" class="headerlink" title="一、axios拦截器"></a>一、axios拦截器</h2><h3 id="1、构造函数"><a href="#1、构造函数" class="headerlink" title="1、构造函数"></a>1、构造函数</h3><pre><code>    function Axios(config){
+        this.config = config;
+        this.interceptors = {
+            request: new InterceptorManager(),
+            response: new InterceptorManager(),
+        }
+    }
 </code></pre>
-<p>JS：</p>
-<pre><code>var example1 = new Vue({
-  el: '#example-1',
-  data: {
-items: [
-  { message: 'Foo' },
-  { message: 'Bar' }
-]
-  }
-})
+<h3 id="2、顺利执行拦截器"><a href="#2、顺利执行拦截器" class="headerlink" title="2、顺利执行拦截器"></a>2、顺利执行拦截器</h3><pre><code>         //发送请求  难点与重点
+        Axios.prototype.request = function(config){
+            //创建一个 promise 对象
+            let promise = Promise.resolve(config);
+            //创建一个数组
+            const chains = [dispatchRequest, undefined];
+            //处理拦截器
+            //请求拦截器 将请求拦截器的回调 压入到 chains 的前面  request.handles = []
+            this.interceptors.request.handlers.forEach(item =&gt; {
+                chains.unshift(item.fulfilled, item.rejected);
+            });
+            //响应拦截器
+            this.interceptors.response.handlers.forEach(item =&gt; {
+                chains.push(item.fulfilled, item.rejected);
+                //请求拦截器在前面，响应拦截器在后面
+            });
+
+            //遍历，弹完之后chains没有元素了，所以不可等于0
+            while(chains.length &gt; 0){
+                promise = promise.then(chains.shift(), chains.shift());
+            }
+
+            return promise;
+        }
+    //发送请求
+    function dispatchRequest(config){
+        //返回一个promise 队形
+        return new Promise((resolve, reject) =&gt; {
+            resolve({
+                status: 200,
+                statusText: 'OK'
+            });
+        });
+    }
 </code></pre>
-<h3 id="两个参数时："><a href="#两个参数时：" class="headerlink" title="两个参数时："></a>两个参数时：</h3><p>多了一个参数表示当前项的索引，也就是index</p>
-<p>html</p>
-<pre><code>&lt;ul id="example-2"&gt;
-  &lt;li v-for="(item, index) in items"&gt;
-{{ parentMessage }} - {{ index }} - {{ item.message }}
-  &lt;/li&gt;
-&lt;/ul&gt;
+<h3 id="3、拦截器管理构造函数"><a href="#3、拦截器管理构造函数" class="headerlink" title="3、拦截器管理构造函数"></a>3、拦截器管理构造函数</h3><pre><code>    function InterceptorManager(){
+        this.handlers = [];
+    }
+    InterceptorManager.prototype.use = function(fulfilled, rejected){
+        this.handlers.push({
+            fulfilled,
+            rejected
+        })
+    }
 </code></pre>
-<p>JS</p>
-<pre><code>var example2 = new Vue({
-  el: '#example-2',
-  data: {
-parentMessage: 'Parent',   与html中的元素相赋值。
-items: [
-  { message: 'Foo' },
-  { message: 'Bar' }
-]
-  }
-})
+<p>原理在于当调用use函数时，就立即将函数fulfilled, rejected做成一个对象，并直接压入数组中</p>
+<h3 id="4、创建axios，并进行属性的添加"><a href="#4、创建axios，并进行属性的添加" class="headerlink" title="4、创建axios，并进行属性的添加"></a>4、创建axios，并进行属性的添加</h3><pre><code>    //创建实例
+    let context = new Axios({});
+    //创建axios函数
+    let axios = Axios.prototype.request.bind(context); //保证this的指向没问题
+    //将 context 属性 config interceptors 添加至 axios 函数对象身上
+    Object.keys(context).forEach(key =&gt; {
+        axios[key] = context[key];
+    });
 </code></pre>
-<h2 id="二、v-for中添加对象"><a href="#二、v-for中添加对象" class="headerlink" title="二、v-for中添加对象"></a>二、v-for中添加对象</h2><p>注意：添加的内容和VUE中的<strong>data值有关</strong></p>
-<p>HTML：</p>
-<pre><code>&lt;ul id="v-for-object" class="demo"&gt;
-  &lt;div v-for="(value, name, index) in object"&gt;
-    //v-for后面的三个参数顺序表示的为在页面中的显示顺序，且保证值的对应，例如
-     //上面写name下面也写name，当然下面也是决定因素      
-     //并且第一个值value就是其内容，与单词无关
-  {{ index }}. {{ name }}: {{ value }}
-&lt;/div&gt;
-&lt;/ul&gt;
+<h2 id="二、axios取消请求的模拟实现"><a href="#二、axios取消请求的模拟实现" class="headerlink" title="二、axios取消请求的模拟实现"></a>二、axios取消请求的模拟实现</h2><h3 id="1、构造函数-1"><a href="#1、构造函数-1" class="headerlink" title="1、构造函数"></a>1、构造函数</h3><pre><code>    function Axios(config){
+        this.config = config;
+    }
 </code></pre>
-<p>JS：</p>
-<pre><code>new Vue({
-  el: '#v-for-object',
-  data: {
-    object: {
-      title: 'How to do lists in Vue',
-      author: 'Jane Doe',
-      publishedAt: '2016-04-10'
-}
-  }
-})
+<h3 id="2、原型-request-方法"><a href="#2、原型-request-方法" class="headerlink" title="2、原型 request 方法"></a>2、原型 request 方法</h3><pre><code>    Axios.prototype.request = function(config){
+        return dispatchRequest(config);
+    }
 </code></pre>
-<p>在遍历对象时，会按 Object.keys() 的结果遍历，但是不能保证它的结果在不同的 JavaScript 引擎下都一致。</p>
-<h2 id="三、维护状态"><a href="#三、维护状态" class="headerlink" title="三、维护状态"></a>三、维护状态</h2><p>当vUE更新使用v-for进行渲染列表时，它之会<strong>就地更新</strong>，即针对的是每个元素，而不是DOM元素，这方法高效，但是只适用于不依赖子组件状态或临时 DOM 状态 (例如：表单输入值) 的列表渲染输出。</p>
-<p>为了对节点身份的跟踪，可以添加唯一的key attribute：</p>
-<pre><code>&lt;div v-for="item in items" v-bind:key="item.id"&gt;
-  &lt;!-- 内容 --&gt;
-&lt;/div&gt;
+<h3 id="3、dispatchRequest-函数"><a href="#3、dispatchRequest-函数" class="headerlink" title="3、dispatchRequest 函数"></a>3、dispatchRequest 函数</h3><pre><code>    function dispatchRequest(config){
+        return xhrAdapter(config);
+    }
 </code></pre>
-<p>除非DOM简单或者对性能有要求，所以尽量用key attribute。</p>
-<p>不要使用对象或数组之类的非基本类型值作为 v-for 的 key。请用字符串或数值类型的值</p>
-<h4 id="注意"><a href="#注意" class="headerlink" title="注意"></a>注意</h4><p>由于JS的限制，所以Vue<strong>不能检测</strong>数组与对象的变化。</p>
-<h2 id="四、v-for与v-if混合使用"><a href="#四、v-for与v-if混合使用" class="headerlink" title="四、v-for与v-if混合使用"></a>四、v-for与v-if混合使用</h2><p>首先处于同一节点时，v-for的优先级要高于v-if，这代表v-if会** 重复运行<strong>在</strong>每次循环之中**</p>
-<p>有时候可以利用它来实现部分渲染：</p>
-<pre><code>&lt;li v-for="todo in todos" v-if="!todo.isComplete"&gt;
-  {{ todo }}
-&lt;/li&gt;
+<h3 id="4、xhrAdapter"><a href="#4、xhrAdapter" class="headerlink" title="4、xhrAdapter"></a>4、xhrAdapter</h3><pre><code>    function xhrAdapter(config){
+        //发送 AJAX 请求
+        return new Promise((resolve, reject) =&gt; {
+            //实例化对象
+            const xhr = new XMLHttpRequest();
+            //初始化
+            xhr.open(config.method, config.url);
+            //发送
+            xhr.send();
+            //处理结果
+            xhr.onreadystatechange = function(){
+                if(xhr.readyState === 4){
+                    //判断结果
+                    if(xhr.status &gt;= 200 &amp;&amp; xhr.status &lt; 300){
+                        //设置为成功的状态
+                        resolve({
+                            status: xhr.status,
+                            statusText: xhr.statusText
+                        });
+                    }else{
+                        reject(new Error('请求失败'));
+                    }
+                }
+            }
+            //关于取消请求的处理
+            if(config.cancelToken){
+                //对 cancelToken 对象身上的 promise 对象指定成功的回调
+                config.cancelToken.promise.then(value =&gt; {
+                    xhr.abort();
+                    //将整体结果设置为失败
+                    reject(new Error('请求已经被取消'))
+                });
+            }
+        })
+    }
 </code></pre>
-<p>本例之中，将会仅仅渲染未完成的todo（内部判断）</p>
-<p>当要求有条件的判断是否执行本次循环，则v-if在外：</p>
-<pre><code>&lt;ul v-if="todos.length"&gt;
-  &lt;li v-for="todo in todos"&gt;
-{{ todo }}
-  &lt;/li&gt;
-&lt;/ul&gt;
-&lt;p v-else&gt;No todos left!&lt;/p&gt;
+<h3 id="5、创建-axios-函数"><a href="#5、创建-axios-函数" class="headerlink" title="5、创建 axios 函数"></a>5、创建 axios 函数</h3><pre><code>    const context = new Axios({});
+    const axios = Axios.prototype.request.bind(context);  //保证this指向没问题
 </code></pre>
-<h2 id="五、当显示改变之后的结果，但不编原来的数据时"><a href="#五、当显示改变之后的结果，但不编原来的数据时" class="headerlink" title="五、当显示改变之后的结果，但不编原来的数据时"></a>五、当显示改变之后的结果，但不编原来的数据时</h2><p>解决：</p>
-<h3 id="1-采用计算属性："><a href="#1-采用计算属性：" class="headerlink" title="1.采用计算属性："></a>1.采用计算属性：</h3><pre><code>   &lt;li v-for="n in evenNumbers"&gt;{{ n }}&lt;/li&gt;
-data: {
-  numbers: [ 1, 2, 3, 4, 5 ]
-},
-computed: {
-  evenNumbers: function () {
-return this.numbers.filter(function (number) {
-  return number % 2 === 0
-})
-  }
-}
+<h3 id="6、CancelToken-构造函数"><a href="#6、CancelToken-构造函数" class="headerlink" title="6、CancelToken 构造函数"></a>6、CancelToken 构造函数</h3><pre><code>    function CancelToken(executor){
+        //声明一个变量
+        var resolvePromise;
+        //为实例对象添加属性
+        this.promise = new Promise((resolve) =&gt; {
+            //将 resolve 赋值给 resolvePromise
+            resolvePromise = resolve
+        });
+        //调用 executor 函数
+        executor(function(){
+            //执行 resolvePromise 函数
+            resolvePromise();
+        });
+    }
 </code></pre>
-<h3 id="计算属性不适用的情况下-例如，在嵌套-v-for-循环中-你可以使用一个方法："><a href="#计算属性不适用的情况下-例如，在嵌套-v-for-循环中-你可以使用一个方法：" class="headerlink" title="计算属性不适用的情况下 (例如，在嵌套 v-for 循环中) 你可以使用一个方法："></a>计算属性不适用的情况下 (例如，在嵌套 v-for 循环中) 你可以使用一个方法：</h3><pre><code>&lt;ul v-for="set in sets"&gt;
-  &lt;li v-for="n in even(set)"&gt;{{ n }}&lt;/li&gt;
-&lt;/ul&gt;
-data: {
-  sets: [[ 1, 2, 3, 4, 5 ], [6, 7, 8, 9, 10]]
-},
-methods: {
-  even: function (numbers) {
-return numbers.filter(function (number) {
-  return number % 2 === 0
-})
-  }
-}
-</code></pre>
+<p>原理：在cancelTaken身上维护了一个<strong>属性promise</strong>，并且之后吧可以改变其状态的变量resolvePromise变量暴露到了全局。</p>
+<p>于是cancel就成了调用的接口，当它使用时，内部resolvePromise就会执行，进而resolve执行改变promise状态为成功</p>
+<p>promise成功时，发送请求的回调就会执行，进而执行了abort函数</p>
+<h2 id="三、重点问题分析"><a href="#三、重点问题分析" class="headerlink" title="三、重点问题分析"></a>三、重点问题分析</h2><h3 id="1、axios-与Axios的关系"><a href="#1、axios-与Axios的关系" class="headerlink" title="1、axios 与Axios的关系?"></a>1、axios 与Axios的关系?</h3><p>1.从语法上来说: axios不是Axios 的实例</p>
+<p>2.从功能上来说: axios是Axios 的实例</p>
+<p>3.axios 是Axios.prototype.request 函数 bind()返回的函数</p>
+<p>4.axios 作为对象有Axios 原型对象上的所有方法，有Axios对象上所有属性</p>
+<p>通俗就是首先从结构来看，axios并不是由Axios实例化，得来的<br>axios来源的关键在于createInstance函数得来的<br>但是从功能上面来说axios具有Axios实例所有的功能</p>
+<h3 id="2、instance-与axios的区别"><a href="#2、instance-与axios的区别" class="headerlink" title="2、instance 与axios的区别?"></a>2、instance 与axios的区别?</h3><h4 id="1-相同"><a href="#1-相同" class="headerlink" title="1.相同:"></a>1.相同:</h4><p>(1)都是一个能发任意请求的函数: request(config)</p>
+<p>(2）都有发特定请求的各种方法: get()/post()/put()/delete()</p>
+<p>(3)都有默认配置和拦截器的属性: defaults/interceptors</p>
+<h4 id="2-不同"><a href="#2-不同" class="headerlink" title="2.不同:"></a>2.不同:</h4><p>(1)默认配置很可能不一样</p>
+<p>(2)instance没有axios后面添加的一些方法: create()/CancelToken()/all()</p>
+<p>可以理解为：</p>
+<p>两者开始是一样的,但是在用instance创建完axios之后,又对axios添加了一系列的属性与方法<br>而这些是instance不具有的,所以这是最大的不同</p>
 
     
 
@@ -492,7 +521,7 @@ return numbers.filter(function (number) {
         </li>
         <li>
           <strong>本文链接：</strong>
-          <a href="https://useritem.github.io/2021/03/30/node与vue初学/第十六条日志/" title="第十六条日志" target="_blank">https://useritem.github.io/2021/03/30/node与vue初学/第十六条日志/</a>
+          <a href="https://useritem.github.io/2021/06/19/axios源码特殊功能深入/" title="axios源码特殊功能深入" target="_blank">https://useritem.github.io/2021/06/19/axios源码特殊功能深入/</a>
         </li>
         
         <li>
@@ -514,7 +543,7 @@ return numbers.filter(function (number) {
 		<ul class="article-tag-list">
 			 
         		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">初学</a>
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">axios</a>
         		</li>
       		
 		</ul>
@@ -526,7 +555,7 @@ return numbers.filter(function (number) {
 		<ul class="article-tag-list">
 			 
         		<li class="article-tag-list-item">
-        			<a href="/categories/node与vue初学//" class="article-tag-list-link color1">node与vue初学</a>
+        			<a href="/categories/js经典问题//" class="article-tag-list-link color2">js经典问题</a>
         		</li>
       		
 		</ul>
@@ -581,7 +610,7 @@ return numbers.filter(function (number) {
     <a class="close js-modal-close" href="javascript:;"><i class="icon icon-close"></i></a>
     <p>扫一扫，分享到微信</p>
     <div class="wx-qrcode">
-     <!-- <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASYAAAEmCAAAAADqr2IGAAAEmklEQVR42u3aS27bQBAFQN//0g6QVYCE1Hs9NKBWiqtADsVhadHfr6/4+v59XX3+53V/b/I9+XOTZ/39zVf3PnBhwoQJE6a3ZPq+vZLH39+VUF5hJXfd39tSXj4REyZMmDAtZ8oDect0QpaE8PwMbYKCCRMmTJj+N6akxJ2VmrNnJZ/fpxeYMGHChAlTEkSvPpkVsW2jOWkTtz8hJkyYMGH6PKZZuzbhaFnbkjgZhc7eCxMmTJgwfQZTG4w/6d8/uN+ECRMmTJjegOn74MoLzrb9mjeRz0N+9KaYMGHChGkt06z92v7Pp3KW5MeYrR9FZ8OECRMmTMuZkjFkG/4fW5oZlbInpe9lQoAJEyZMmJYzJQ9OCtQkYLeF7skIc7biE+UjmDBhwoTp7ZlasqR1ex/+TxZ0ToavJz85JkyYMGHayNSOG9sD5QXzU6XsbID6IlnBhAkTJkzLmdpS9mSE2Yb2k2Hn7Cf5x18xYcKECdNapvboeWhvG8ft650UwPmibdGTxoQJEyZMb890/8JJmJ+F4Ra3HVLO0ogXU19MmDBhwrSEKT/us4PGvJw+GabOCvjLDgEmTJgwYVrIlKcFSdGYHDpvK+epSZ7W/Hj2hAkTJkyYFjLlDdP2rpOXnLWbW746G8KECRMmTG/GdDLkOwnn7f9sS+48EYl+WkyYMGHCtJbpqVZpyz0LzPlYdJasvDgJJkyYMGFaztSuzrRhOE8pZoPM5DtnhTcmTJgwYdrOlD+gvYb95ocGou0Z6oYvJkyYMGFawpSPBmeFcf7XouU6Ym2hL/MmTJgwYcK0kCkJq23oPSeeneHkO+uiFxMmTJgwvTHTeeA8KaHzZ90nCm2rul5gxYQJEyZMa5lmHPn6S746044ek9O2zeWiyYsJEyZMmJYzJa+Xv3AegGfBe/YuNTQmTJgwYVrIlFueFJN5i7buT8dPPyqhMWHChAnTWqZ85aVddnnqOm9An/wMmDBhwoTp85jar25BZ0+ZpSMtWVTMY8KECROmtUxtuTgL3u03JyXrycrOjBsTJkyYMG1hasPnyXhyVjYnqzYJ32zlCBMmTJgwbWfKw2QyVsyD/flq7EkSM1yQxYQJEyZMC5lmRelJYzd/+Vngz5OA4jyYMGHChGktUzvkSwJwEnpnzdZ8YJkvA+XviAkTJkyY9jLlYXvGMSuh8/QiaR/nCdCLBAITJkyYMC1kaoPosyPMtsacfZIXwJgwYcKE6ZOYZsPFWSDPj5vTzxq4eYrwlXSUMWHChAnTEqbZQc8/z4vkZHR6nqbUG0OYMGHChOmNmX4CaLYG9OziTp4iDNeJMGHChAnTEqbv8jp/+ZOBYn6Gds3oxb2YMGHChGkt0yxAzsaEeVM1bwTPRqcn60SYMGHChGkjU76yMxsKtitB7cizfeFhCxgTJkyYMC1naoNou+Iza78+dYaThjImTJgwYcKUr9q0Cz3tOZPzJ9+ACRMmTJj+T6bZ8DIphtt2c1vctnddru9gwoQJE6a1THkIz481K3TbVKMts2clNCZMmDBh2ss0a7a2x4rKyzIRyZ/7QJMXEyZMmDDtY/oFaoNDlEcK8XgAAAAASUVORK5CYII=" alt="微信分享二维码"> -->
+     <!-- <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQ4AAAEOCAAAAABd2qZ5AAAD9ElEQVR42u3aS27bQBAFQN3/0so2QETqve6h4QDFlWHRo5migWZ/Xq/4ev913X/675Xck1z3+7n6zeuJCwcOHDhwxEdNDrOB26yWECdY99A4cODAgeMUx9VWru6Jlr49ZHuk+z3Pgi4OHDhw4Pg9HO3mZkybh4EDBw4cOP4vjvtgdioJzA88e5w4cODAgeM5jqQMlyw9axTNWJPy34O1Uhw4cODA0VXw6uTqN//8yHwHDhw4cOAok6U2EM7uyQPzrDhYnA4HDhw4cKw58oD0XHludtT8wPW5cODAgQPHIY59SEu+rG0pbe4Ztqxw4MCBA8eaIxl3S+48ddRZWD07iocDBw4cOGYc95u4D11tAW4zYNemlHmI/VArxYEDBw4cC47NcEP7lW2pMUfZ/LyCwIEDBw4cQcNpOAQQJIFtIW+W1CUvCnVBEAcOHDhwlFMEbbktb/BsKDedoFnKhwMHDhw4znKcSrfacL4fs0vC8zCRw4EDBw4cJcd+ifZv85plEvgf+b/AgQMHDhwP9FlmrZ194MxTvk1xMJrvwIEDBw4cI442+OWf5uEwH547OwD35fHgwIEDB46T1bZiIGCW5uVB9BVf+UvAsH2FAwcOHDiCU8yGyTaFv3YE4bnBiA+7woEDBw4cD3MkKVZbpEvWT0JyXtYswjkOHDhw4FhzzBpOsw1tmljv4GrXL9pOOHDgwIEj/q5k6TwYJ62pWSDP07A8kH8pDuLAgQMHjhHHrNmzKQ7mZcF2VG5WfPyyQxw4cODAcZSjLfYdKMmNxinaRK7gw4EDBw4cJUe+3f1QQj6mMCsvtqndZUaLAwcOHDiOcuTlwk1jaTPoMAvVRdsJBw4cOHAsODYlv2G5LR5QaClnIfnyRDhw4MCBY3Sidiht345qk65Z82nYAMOBAwcOHIdmCdrQ2G4iLxruB+Da9PLDOjhw4MCBY8HRfvGsqdMS5Ini7FFFbSccOHDgwLHgaI+UHLgdZWhXy4uMRSMKBw4cOHCsOTZpVbL1U4MO+z204RwHDhw4cMw42oGA9s7Z+N0+oA6Lnjhw4MCB4xBHvol2lCFPqJLyXwKUvDpc7h8HDhw4cKw5ZqNmRV5Yhr32YeRlzWKEDgcOHDhwLDje5bVJydri4+xgsxeFIlPEgQMHDhyHrlmYzBOnooQXB/i86VVj4cCBAweOOIVrBwjaYLxJC2ehPR/Iw4EDBw4cZzlmzaS8mLgvDuZp5Kr4iAMHDhw4fpxjFt42uG0nbZWz4sCBAweOH+fYN6jaFfJHMhvLOPbegQMHDhw41oW8ttjXHnUTGYfjFzhw4MCBY82xGVDIl2vLeflIRPJp21TDgQMHDhwjjj8RlzWXUoovMgAAAABJRU5ErkJggg==" alt="微信分享二维码"> -->
     </div>
 </div>
 
@@ -596,18 +625,9 @@ return numbers.filter(function (number) {
 
 <nav id="article-nav">
   
-    <a href="/2021/03/30/node%E4%B8%8Evue%E5%88%9D%E5%AD%A6/%E7%AC%AC%E5%8D%81%E4%B8%83%E5%A4%A9%E6%97%A5%E5%BF%97/" id="article-nav-newer" class="article-nav-link-wrap">
-      <i class="icon-circle-left"></i>
-      <div class="article-nav-title">
-        
-          第十七天日志
-        
-      </div>
-    </a>
   
-  
-    <a href="/2021/03/30/node%E4%B8%8Evue%E5%88%9D%E5%AD%A6/%E7%AC%AC%E5%8D%81%E4%BA%94%E5%A4%A9%E6%97%A5%E5%BF%97/" id="article-nav-older" class="article-nav-link-wrap">
-      <div class="article-nav-title">第十五天日志</div>
+    <a href="/2021/06/19/axios%E6%BA%90%E7%A0%81%E5%9F%BA%E7%A1%80%E5%8A%9F%E8%83%BD%E6%B7%B1%E5%85%A5/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">axios源码基础功能深入</div>
       <i class="icon-circle-right"></i>
     </a>
   
@@ -634,7 +654,7 @@ return numbers.filter(function (number) {
                 </span>
                 <span class="tooltip-content">
                     <div class="toc-article">
-                    <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%AC%AC%E5%8D%81%E5%85%AD%E5%A4%A9%E6%97%A5%E5%BF%97"><span class="toc-number">1.</span> <span class="toc-text">第十六天日志</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81v-for%E6%8A%8A%E4%B8%80%E4%B8%AA%E6%95%B0%E7%BB%84%E5%AF%B9%E5%BA%94%E4%B8%BA%E4%B8%80%E4%B8%AA%E5%85%83%E7%B4%A0%E3%80%82"><span class="toc-number">1.1.</span> <span class="toc-text">一、v-for把一个数组对应为一个元素。</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%99%AE%E9%80%9A%E7%94%A8%E6%B3%95%EF%BC%9A"><span class="toc-number">1.1.1.</span> <span class="toc-text">普通用法：</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%A4%E4%B8%AA%E5%8F%82%E6%95%B0%E6%97%B6%EF%BC%9A"><span class="toc-number">1.1.2.</span> <span class="toc-text">两个参数时：</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81v-for%E4%B8%AD%E6%B7%BB%E5%8A%A0%E5%AF%B9%E8%B1%A1"><span class="toc-number">1.2.</span> <span class="toc-text">二、v-for中添加对象</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E7%BB%B4%E6%8A%A4%E7%8A%B6%E6%80%81"><span class="toc-number">1.3.</span> <span class="toc-text">三、维护状态</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%B3%A8%E6%84%8F"><span class="toc-number">1.3.0.1.</span> <span class="toc-text">注意</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81v-for%E4%B8%8Ev-if%E6%B7%B7%E5%90%88%E4%BD%BF%E7%94%A8"><span class="toc-number">1.4.</span> <span class="toc-text">四、v-for与v-if混合使用</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E5%BD%93%E6%98%BE%E7%A4%BA%E6%94%B9%E5%8F%98%E4%B9%8B%E5%90%8E%E7%9A%84%E7%BB%93%E6%9E%9C%EF%BC%8C%E4%BD%86%E4%B8%8D%E7%BC%96%E5%8E%9F%E6%9D%A5%E7%9A%84%E6%95%B0%E6%8D%AE%E6%97%B6"><span class="toc-number">1.5.</span> <span class="toc-text">五、当显示改变之后的结果，但不编原来的数据时</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-%E9%87%87%E7%94%A8%E8%AE%A1%E7%AE%97%E5%B1%9E%E6%80%A7%EF%BC%9A"><span class="toc-number">1.5.1.</span> <span class="toc-text">1.采用计算属性：</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%AE%A1%E7%AE%97%E5%B1%9E%E6%80%A7%E4%B8%8D%E9%80%82%E7%94%A8%E7%9A%84%E6%83%85%E5%86%B5%E4%B8%8B-%E4%BE%8B%E5%A6%82%EF%BC%8C%E5%9C%A8%E5%B5%8C%E5%A5%97-v-for-%E5%BE%AA%E7%8E%AF%E4%B8%AD-%E4%BD%A0%E5%8F%AF%E4%BB%A5%E4%BD%BF%E7%94%A8%E4%B8%80%E4%B8%AA%E6%96%B9%E6%B3%95%EF%BC%9A"><span class="toc-number">1.5.2.</span> <span class="toc-text">计算属性不适用的情况下 (例如，在嵌套 v-for 循环中) 你可以使用一个方法：</span></a></li></ol></li></ol></li></ol>
+                    <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#axios%E6%8B%A6%E6%88%AA%E5%99%A8%E4%B8%8E%E8%AF%B7%E6%B1%82%E5%8F%96%E6%B6%88%E7%9A%84%E6%A8%A1%E6%8B%9F%E5%AE%9E%E7%8E%B0"><span class="toc-number">1.</span> <span class="toc-text">axios拦截器与请求取消的模拟实现</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81axios%E6%8B%A6%E6%88%AA%E5%99%A8"><span class="toc-number">1.1.</span> <span class="toc-text">一、axios拦截器</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1%E3%80%81%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0"><span class="toc-number">1.1.1.</span> <span class="toc-text">1、构造函数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2%E3%80%81%E9%A1%BA%E5%88%A9%E6%89%A7%E8%A1%8C%E6%8B%A6%E6%88%AA%E5%99%A8"><span class="toc-number">1.1.2.</span> <span class="toc-text">2、顺利执行拦截器</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3%E3%80%81%E6%8B%A6%E6%88%AA%E5%99%A8%E7%AE%A1%E7%90%86%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0"><span class="toc-number">1.1.3.</span> <span class="toc-text">3、拦截器管理构造函数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4%E3%80%81%E5%88%9B%E5%BB%BAaxios%EF%BC%8C%E5%B9%B6%E8%BF%9B%E8%A1%8C%E5%B1%9E%E6%80%A7%E7%9A%84%E6%B7%BB%E5%8A%A0"><span class="toc-number">1.1.4.</span> <span class="toc-text">4、创建axios，并进行属性的添加</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81axios%E5%8F%96%E6%B6%88%E8%AF%B7%E6%B1%82%E7%9A%84%E6%A8%A1%E6%8B%9F%E5%AE%9E%E7%8E%B0"><span class="toc-number">1.2.</span> <span class="toc-text">二、axios取消请求的模拟实现</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1%E3%80%81%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0-1"><span class="toc-number">1.2.1.</span> <span class="toc-text">1、构造函数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2%E3%80%81%E5%8E%9F%E5%9E%8B-request-%E6%96%B9%E6%B3%95"><span class="toc-number">1.2.2.</span> <span class="toc-text">2、原型 request 方法</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3%E3%80%81dispatchRequest-%E5%87%BD%E6%95%B0"><span class="toc-number">1.2.3.</span> <span class="toc-text">3、dispatchRequest 函数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4%E3%80%81xhrAdapter"><span class="toc-number">1.2.4.</span> <span class="toc-text">4、xhrAdapter</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5%E3%80%81%E5%88%9B%E5%BB%BA-axios-%E5%87%BD%E6%95%B0"><span class="toc-number">1.2.5.</span> <span class="toc-text">5、创建 axios 函数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6%E3%80%81CancelToken-%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0"><span class="toc-number">1.2.6.</span> <span class="toc-text">6、CancelToken 构造函数</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E9%87%8D%E7%82%B9%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90"><span class="toc-number">1.3.</span> <span class="toc-text">三、重点问题分析</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1%E3%80%81axios-%E4%B8%8EAxios%E7%9A%84%E5%85%B3%E7%B3%BB"><span class="toc-number">1.3.1.</span> <span class="toc-text">1、axios 与Axios的关系?</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2%E3%80%81instance-%E4%B8%8Eaxios%E7%9A%84%E5%8C%BA%E5%88%AB"><span class="toc-number">1.3.2.</span> <span class="toc-text">2、instance 与axios的区别?</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#1-%E7%9B%B8%E5%90%8C"><span class="toc-number">1.3.2.1.</span> <span class="toc-text">1.相同:</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-%E4%B8%8D%E5%90%8C"><span class="toc-number">1.3.2.2.</span> <span class="toc-text">2.不同:</span></a></li></ol></li></ol></li></ol></li></ol>
                     </div>
                 </span>
             </div>
@@ -658,9 +678,9 @@ return numbers.filter(function (number) {
     <script src="/lib/giteement.browser.js"></script>
   
   <script>
-  <!-- id: "第十六条日志" -->
+  <!-- id: "axios源码特殊功能深入" -->
   var giteement = new Giteement({
-    id: '20210330210107',
+    id: '20210619113821',
     owner: '',
     repo: '',
     backcall_uri: '',

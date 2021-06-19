@@ -285,6 +285,479 @@
 
 
   
+    <article id="post-axios源码特殊功能深入" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+  
+  
+    <h1 itemprop="name">
+	
+	  <a class="article-title" href="/2021/06/19/axios%E6%BA%90%E7%A0%81%E7%89%B9%E6%AE%8A%E5%8A%9F%E8%83%BD%E6%B7%B1%E5%85%A5/" target="_blank">axios源码特殊功能深入</a>
+  
+    </h1>
+  
+
+
+  
+  
+<a href="/2021/06/19/axios%E6%BA%90%E7%A0%81%E7%89%B9%E6%AE%8A%E5%8A%9F%E8%83%BD%E6%B7%B1%E5%85%A5/" class="archive-article-date">
+        <time datetime="2021-06-19T03:38:21.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-06-19</time>
+</a>
+
+  
+  
+    
+
+  
+  </header>
+  
+  <div class="article-entry" itemprop="articleBody">
+    
+    
+    
+    <h1 id="axios拦截器与请求取消的模拟实现"><a href="#axios拦截器与请求取消的模拟实现" class="headerlink" title="axios拦截器与请求取消的模拟实现"></a>axios拦截器与请求取消的模拟实现</h1><h2 id="一、axios拦截器"><a href="#一、axios拦截器" class="headerlink" title="一、axios拦截器"></a>一、axios拦截器</h2><h3 id="1、构造函数"><a href="#1、构造函数" class="headerlink" title="1、构造函数"></a>1、构造函数</h3><pre><code>    function Axios(config){
+        this.config = config;
+        this.interceptors = {
+            request: new InterceptorManager(),
+            response: new InterceptorManager(),
+        }
+    }
+</code></pre>
+<h3 id="2、顺利执行拦截器"><a href="#2、顺利执行拦截器" class="headerlink" title="2、顺利执行拦截器"></a>2、顺利执行拦截器</h3><pre><code>         //发送请求  难点与重点
+        Axios.prototype.request = function(config){
+            //创建一个 promise 对象
+            let promise = Promise.resolve(config);
+            //创建一个数组
+            const chains = [dispatchRequest, undefined];
+            //处理拦截器
+            //请求拦截器 将请求拦截器的回调 压入到 chains 的前面  request.handles = []
+            this.interceptors.request.handlers.forEach(item =&gt; {
+                chains.unshift(item.fulfilled, item.rejected);
+            });
+            //响应拦截器
+            this.interceptors.response.handlers.forEach(item =&gt; {
+                chains.push(item.fulfilled, item.rejected);
+                //请求拦截器在前面，响应拦截器在后面
+            });
+
+            //遍历，弹完之后chains没有元素了，所以不可等于0
+            while(chains.length &gt; 0){
+                promise = promise.then(chains.shift(), chains.shift());
+            }
+
+            return promise;
+        }
+    //发送请求
+    function dispatchRequest(config){
+        //返回一个promise 队形
+        return new Promise((resolve, reject) =&gt; {
+            resolve({
+                status: 200,
+                statusText: 'OK'
+            });
+        });
+    }
+</code></pre>
+<h3 id="3、拦截器管理构造函数"><a href="#3、拦截器管理构造函数" class="headerlink" title="3、拦截器管理构造函数"></a>3、拦截器管理构造函数</h3><pre><code>    function InterceptorManager(){
+        this.handlers = [];
+    }
+    InterceptorManager.prototype.use = function(fulfilled, rejected){
+        this.handlers.push({
+            fulfilled,
+            rejected
+        })
+    }
+</code></pre>
+<p>原理在于当调用use函数时，就立即将函数fulfilled, rejected做成一个对象，并直接压入数组中</p>
+<h3 id="4、创建axios，并进行属性的添加"><a href="#4、创建axios，并进行属性的添加" class="headerlink" title="4、创建axios，并进行属性的添加"></a>4、创建axios，并进行属性的添加</h3><pre><code>    //创建实例
+    let context = new Axios({});
+    //创建axios函数
+    let axios = Axios.prototype.request.bind(context); //保证this的指向没问题
+    //将 context 属性 config interceptors 添加至 axios 函数对象身上
+    Object.keys(context).forEach(key =&gt; {
+        axios[key] = context[key];
+    });
+</code></pre>
+<h2 id="二、axios取消请求的模拟实现"><a href="#二、axios取消请求的模拟实现" class="headerlink" title="二、axios取消请求的模拟实现"></a>二、axios取消请求的模拟实现</h2><h3 id="1、构造函数-1"><a href="#1、构造函数-1" class="headerlink" title="1、构造函数"></a>1、构造函数</h3><pre><code>    function Axios(config){
+        this.config = config;
+    }
+</code></pre>
+<h3 id="2、原型-request-方法"><a href="#2、原型-request-方法" class="headerlink" title="2、原型 request 方法"></a>2、原型 request 方法</h3><pre><code>    Axios.prototype.request = function(config){
+        return dispatchRequest(config);
+    }
+</code></pre>
+<h3 id="3、dispatchRequest-函数"><a href="#3、dispatchRequest-函数" class="headerlink" title="3、dispatchRequest 函数"></a>3、dispatchRequest 函数</h3><pre><code>    function dispatchRequest(config){
+        return xhrAdapter(config);
+    }
+</code></pre>
+<h3 id="4、xhrAdapter"><a href="#4、xhrAdapter" class="headerlink" title="4、xhrAdapter"></a>4、xhrAdapter</h3><pre><code>    function xhrAdapter(config){
+        //发送 AJAX 请求
+        return new Promise((resolve, reject) =&gt; {
+            //实例化对象
+            const xhr = new XMLHttpRequest();
+            //初始化
+            xhr.open(config.method, config.url);
+            //发送
+            xhr.send();
+            //处理结果
+            xhr.onreadystatechange = function(){
+                if(xhr.readyState === 4){
+                    //判断结果
+                    if(xhr.status &gt;= 200 &amp;&amp; xhr.status &lt; 300){
+                        //设置为成功的状态
+                        resolve({
+                            status: xhr.status,
+                            statusText: xhr.statusText
+                        });
+                    }else{
+                        reject(new Error('请求失败'));
+                    }
+                }
+            }
+            //关于取消请求的处理
+            if(config.cancelToken){
+                //对 cancelToken 对象身上的 promise 对象指定成功的回调
+                config.cancelToken.promise.then(value =&gt; {
+                    xhr.abort();
+                    //将整体结果设置为失败
+                    reject(new Error('请求已经被取消'))
+                });
+            }
+        })
+    }
+</code></pre>
+<h3 id="5、创建-axios-函数"><a href="#5、创建-axios-函数" class="headerlink" title="5、创建 axios 函数"></a>5、创建 axios 函数</h3><pre><code>    const context = new Axios({});
+    const axios = Axios.prototype.request.bind(context);  //保证this指向没问题
+</code></pre>
+<h3 id="6、CancelToken-构造函数"><a href="#6、CancelToken-构造函数" class="headerlink" title="6、CancelToken 构造函数"></a>6、CancelToken 构造函数</h3><pre><code>    function CancelToken(executor){
+        //声明一个变量
+        var resolvePromise;
+        //为实例对象添加属性
+        this.promise = new Promise((resolve) =&gt; {
+            //将 resolve 赋值给 resolvePromise
+            resolvePromise = resolve
+        });
+        //调用 executor 函数
+        executor(function(){
+            //执行 resolvePromise 函数
+            resolvePromise();
+        });
+    }
+</code></pre>
+<p>原理：在cancelTaken身上维护了一个<strong>属性promise</strong>，并且之后吧可以改变其状态的变量resolvePromise变量暴露到了全局。</p>
+<p>于是cancel就成了调用的接口，当它使用时，内部resolvePromise就会执行，进而resolve执行改变promise状态为成功</p>
+<p>promise成功时，发送请求的回调就会执行，进而执行了abort函数</p>
+<h2 id="三、重点问题分析"><a href="#三、重点问题分析" class="headerlink" title="三、重点问题分析"></a>三、重点问题分析</h2><h3 id="1、axios-与Axios的关系"><a href="#1、axios-与Axios的关系" class="headerlink" title="1、axios 与Axios的关系?"></a>1、axios 与Axios的关系?</h3><p>1.从语法上来说: axios不是Axios 的实例</p>
+<p>2.从功能上来说: axios是Axios 的实例</p>
+<p>3.axios 是Axios.prototype.request 函数 bind()返回的函数</p>
+<p>4.axios 作为对象有Axios 原型对象上的所有方法，有Axios对象上所有属性</p>
+<p>通俗就是首先从结构来看，axios并不是由Axios实例化，得来的<br>axios来源的关键在于createInstance函数得来的<br>但是从功能上面来说axios具有Axios实例所有的功能</p>
+<h3 id="2、instance-与axios的区别"><a href="#2、instance-与axios的区别" class="headerlink" title="2、instance 与axios的区别?"></a>2、instance 与axios的区别?</h3><h4 id="1-相同"><a href="#1-相同" class="headerlink" title="1.相同:"></a>1.相同:</h4><p>(1)都是一个能发任意请求的函数: request(config)</p>
+<p>(2）都有发特定请求的各种方法: get()/post()/put()/delete()</p>
+<p>(3)都有默认配置和拦截器的属性: defaults/interceptors</p>
+<h4 id="2-不同"><a href="#2-不同" class="headerlink" title="2.不同:"></a>2.不同:</h4><p>(1)默认配置很可能不一样</p>
+<p>(2)instance没有axios后面添加的一些方法: create()/CancelToken()/all()</p>
+<p>可以理解为：</p>
+<p>两者开始是一样的,但是在用instance创建完axios之后,又对axios添加了一系列的属性与方法<br>而这些是instance不具有的,所以这是最大的不同</p>
+
+    
+
+    
+
+    
+
+  </div>
+  <div class="article-info article-info-index">
+    
+    
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">axios</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+    
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/js经典问题//" class="article-tag-list-link color2">js经典问题</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+
+    
+    <p class="article-more-link">
+      <a class="article-more-a" href="/2021/06/19/axios%E6%BA%90%E7%A0%81%E7%89%B9%E6%AE%8A%E5%8A%9F%E8%83%BD%E6%B7%B1%E5%85%A5/">展开全文 >></a>
+    </p>
+    
+
+    
+    <div class="clearfix"></div>
+  </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+    <article id="post-axios源码基础功能深入" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+  
+  
+    <h1 itemprop="name">
+	
+	  <a class="article-title" href="/2021/06/19/axios%E6%BA%90%E7%A0%81%E5%9F%BA%E7%A1%80%E5%8A%9F%E8%83%BD%E6%B7%B1%E5%85%A5/" target="_blank">axios源码基础功能深入</a>
+  
+    </h1>
+  
+
+
+  
+  
+<a href="/2021/06/19/axios%E6%BA%90%E7%A0%81%E5%9F%BA%E7%A1%80%E5%8A%9F%E8%83%BD%E6%B7%B1%E5%85%A5/" class="archive-article-date">
+        <time datetime="2021-06-19T03:37:57.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-06-19</time>
+</a>
+
+  
+  
+    
+
+  
+  </header>
+  
+  <div class="article-entry" itemprop="articleBody">
+    
+    
+    
+    <h1 id="一、axios源码分析"><a href="#一、axios源码分析" class="headerlink" title="一、axios源码分析"></a>一、axios源码分析</h1><h2 id="1、源码目录分析"><a href="#1、源码目录分析" class="headerlink" title="1、源码目录分析"></a>1、源码目录分析</h2><p>直接引入尚硅谷视频里的源码目录结构：</p>
+<p><a target="_blank" rel="noopener" href="https://imgtu.com/i/R9tHw4"><img src="https://z3.ax1x.com/2021/06/18/R9tHw4.png" alt="R9tHw4.png"></a></p>
+<h3 id="重点文件在于："><a href="#重点文件在于：" class="headerlink" title="重点文件在于："></a>重点文件在于：</h3><p>Axios.js，即axios的构造文件，最终对Axios进行暴露，并用Axios进行“伪”实例化对象，也可以理解为构造函数的一个组成。</p>
+<p>dispatchRequest.js文件主要对xhr.js与http.js的适配器的使用<strong>调用</strong>，由其来进行指令需求的调用</p>
+<p>index.js为整个包的js文件，进而引出axios.js文件.</p>
+<h2 id="2、axios的构造"><a href="#2、axios的构造" class="headerlink" title="2、axios的构造"></a>2、axios的构造</h2><p>重点在于先构造函数，再在函数上面进行方法的的添加，步骤</p>
+<h3 id="1、定义构造函数"><a href="#1、定义构造函数" class="headerlink" title="1、定义构造函数"></a>1、定义构造函数</h3><pre><code>    function Axios(config){
+        //初始化
+        this.defaults = config;//为了创建 default 默认属性
+        this.intercepters = {
+        //实际为intercepters的实例，为了保证代码可观性，便写做这样
+            request: {},
+            response: {}
+        }
+    }
+</code></pre>
+<h3 id="2、原型方法的添加"><a href="#2、原型方法的添加" class="headerlink" title="2、原型方法的添加"></a>2、原型方法的添加</h3><pre><code>    Axios.prototype.request = function(config){
+        console.log('发送 AJAX 请求 请求的类型为 '+ config.method);
+    }
+    Axios.prototype.get = function(config){
+        return this.request({method: 'GET'});
+        //return this.request(config);    因为便于区分，所以不回这样写
+    }
+    //其他方法能够顺利使用的关键在于调用了request方法
+</code></pre>
+<h3 id="3、声明函数"><a href="#3、声明函数" class="headerlink" title="3、声明函数"></a>3、声明函数</h3><pre><code>    //声明函数
+    function createInstance(config){
+        //实例化一个对象
+        let context = new Axios(config);// context.get()  context.post()  但是不能当做函数使用 context() X
+        //创建请求函数
+        let instance = Axios.prototype.request.bind(context); 
+        //bind方法进行函数的绑定对象，理解为f.bind(obj)，实际上可以理解为obj.f()，这时，f函数体内的this自然指向的是obj
+        // instance 是一个函数 并且可以 instance({})  此时 instance 不能 instance.get X
+
+        //将 Axios.prototype 对象中的方法添加到instance函数对象中
+        Object.keys(Axios.prototype).forEach(key =&gt; {
+            instance[key] = Axios.prototype[key].bind(context);
+            // 可直接用this.default  this.interceptors
+            //这样保证内部直接指向实例对象context
+        }); //此时它既可以是函数又可以是对象
+
+        //为 instance 函数对象添加属性 default 与 interceptors
+        Object.keys(context).forEach(key =&gt; {
+            instance[key] = context[key];
+        });
+        return instance;
+    }
+</code></pre>
+<h3 id="4、使用axios"><a href="#4、使用axios" class="headerlink" title="4、使用axios"></a>4、使用axios</h3><pre><code>    let axios = createInstance();
+    //发送请求
+    // axios({method:'POST'});
+    axios.get({});
+    axios.post({});
+</code></pre>
+<h2 id="2、请求的发送"><a href="#2、请求的发送" class="headerlink" title="2、请求的发送"></a>2、请求的发送</h2><p>1、声明构造函数</p>
+<pre><code>function Axios(config){
+        this.config = config;
+    }
+    Axios.prototype.request = function(config){
+        //发送请求
+        //创建一个 promise 对象
+        let promise = Promise.resolve(config);
+        //声明一个数组
+        let chains = [dispatchRequest, undefined];// undefined 占位
+        //循环处理数组,调用 then 方法指定回调
+        let result = promise.then(chains[0], chains[1]);
+        //返回 promise 的结果
+        return result;
+    }
+</code></pre>
+<p>2、dsipatchRequest函数</p>
+<pre><code>        function dispatchRequest(config){
+        //调用适配器发送请求
+        return xhrAdapter(config).then(response =&gt; {
+            //响应的结果进行转换处理
+            //....
+            return response;
+        }, error =&gt; {
+            throw error;
+        });
+    }
+</code></pre>
+<p>3、adapter适配器,这里就是实现发送，也就是xhr.js文件</p>
+<pre><code>  function xhrAdapter(config){
+        console.log('xhrAdapter 函数执行');
+        return new Promise((resolve, reject) =&gt; {
+            //发送 AJAX 请求
+            let xhr = new XMLHttpRequest();
+            //初始化
+            xhr.open(config.method, config.url);
+            //发送
+            xhr.send();
+            //绑定事件
+            xhr.onreadystatechange = function(){
+                if(xhr.readyState === 4){
+                    //判断成功的条件
+                    if(xhr.status &gt;= 200 &amp;&amp; xhr.status &lt; 300){
+                        //成功的状态
+                        resolve({
+                            //配置对象
+                            config: config,
+                            //响应体
+                            data: xhr.response,
+                            //响应头
+                            headers: xhr.getAllResponseHeaders(), //字符串  parseHeaders
+                            // xhr 请求对象
+                            request: xhr,
+                            //响应状态码
+                            status: xhr.status,
+                            //响应状态字符串
+                            statusText: xhr.statusText
+                        });
+                    }else{
+                        //失败的状态
+                        reject(new Error('请求失败 失败的状态码为' + xhr.status));
+                    }
+                }
+            }
+        });
+    }
+</code></pre>
+<p>4、创建axios函数</p>
+<pre><code>  let axios = Axios.prototype.request.bind(null);    //不执行其他的实例对象了
+    axios({
+        method:'GET',
+        url:'http://localhost:3000/posts'
+    }).then(response =&gt; {
+        console.log(response);
+    });
+</code></pre>
+<p>流程：实际是先对结果与dispatchRequest函数进行同步，即成功同成功，失败同失败，且dispatchRequest的成功结果</p>
+<p>就是result的结果值，可以理解为dispatchRequest中的return response就是result，</p>
+<p>之后return result直接返回给Axios的执行结果</p>
+
+    
+
+    
+
+    
+
+  </div>
+  <div class="article-info article-info-index">
+    
+    
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">axios</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+    
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/js经典问题//" class="article-tag-list-link color2">js经典问题</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+
+    
+    <p class="article-more-link">
+      <a class="article-more-a" href="/2021/06/19/axios%E6%BA%90%E7%A0%81%E5%9F%BA%E7%A1%80%E5%8A%9F%E8%83%BD%E6%B7%B1%E5%85%A5/">展开全文 >></a>
+    </p>
+    
+
+    
+    <div class="clearfix"></div>
+  </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
     <article id="post-js经典问题/axios使用问题" class="article article-type-post  article-index" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -478,6 +951,17 @@
   <div class="article-info article-info-index">
     
     
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">axios</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
     
 	<div class="article-category tagcloud">
 		<i class="icon-book icon"></i>
@@ -2022,583 +2506,6 @@ grid-column-end: 4;
 
 
   
-    <article id="post-webpack学习/webpack环境优化" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-  
-  
-    <h1 itemprop="name">
-	
-	  <a class="article-title" href="/2021/04/26/webpack%E5%AD%A6%E4%B9%A0/webpack%E7%8E%AF%E5%A2%83%E4%BC%98%E5%8C%96/" target="_blank">webpack环境优化</a>
-  
-    </h1>
-  
-
-
-  
-  
-<a href="/2021/04/26/webpack%E5%AD%A6%E4%B9%A0/webpack%E7%8E%AF%E5%A2%83%E4%BC%98%E5%8C%96/" class="archive-article-date">
-        <time datetime="2021-04-26T08:15:57.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-04-26</time>
-</a>
-
-  
-  
-    
-
-  
-  </header>
-  
-  <div class="article-entry" itemprop="articleBody">
-    
-    
-    
-    <h1 id="1、HMR：模块热替换"><a href="#1、HMR：模块热替换" class="headerlink" title="1、HMR：模块热替换"></a>1、HMR：模块热替换</h1><p>当一个模块发生改变时，需要全部进行重新打包，所以使用HMR模块，提高其效率</p>
-<p>样式文件:可以使用HMR功能,因为style-loader自动实习了—–&gt;这就是为啥开发时用style-loader</p>
-<p>js文件:默认没有使用HMR功能–&gt;要修改js代码,添加支持HMR的代码<br>     注意:HMR功能对于js处理,只能处理非入口文件</p>
-<p>html:默认不能使用HMR功能,同时html文件不能热更新，解决:修改entry入口,将html文件引入(它不需要做HMR功能)，不止在plugins中引入：</p>
-<pre><code> entry:['./src/index.js','./src/index.html'],
-</code></pre>
-<h2 id="js处理（index-js文件下的）："><a href="#js处理（index-js文件下的）：" class="headerlink" title="js处理（index.js文件下的）："></a>js处理（index.js文件下的）：</h2><pre><code>// 一旦module.hot为true,说明开启了HMR功能，这时对某个js文件进行监听
-module.hot.accept('./print.js',function(){
-    //方法会监听print.js文件变化,一旦发生变换,其他默认不会打包构建
-    // 会执行后面的回调函数
-    print()
-})
-}
-</code></pre>
-<h1 id="2、source-map-–一种映射"><a href="#2、source-map-–一种映射" class="headerlink" title="2、source map   –一种映射"></a>2、source map   –一种映射</h1><h2 id="1、作用"><a href="#1、作用" class="headerlink" title="1、作用"></a>1、作用</h2><p>source-map:一种提供源代码到构建代码的映射技术(如果构建后代码错误,通过映射可以追踪源代码错误)(外部)</p>
-<h2 id="2、参数（进行组合）"><a href="#2、参数（进行组合）" class="headerlink" title="2、参数（进行组合）"></a>2、参数（进行组合）</h2><pre><code>[inline-|hidden-|eval][nosources][cheap-[module-]] source-map
-</code></pre>
-<p><strong>注意参数结合顺序</strong></p>
-<pre><code>source-map --&gt;外部
-</code></pre>
-<p>错误代码的准确信息以及”源代码”的错误位置(从f12中的soucer中看)</p>
-<pre><code> inline-source-map  ---&gt;内联source-map文件
-</code></pre>
-<p>1.只是一个内联的source-map</p>
-<p>2.错误代码的准确信息以及源代码的错误位置(从f12中的soucer中看) 类似于上</p>
-<pre><code>hidden-source-map --&gt;外部
-</code></pre>
-<p>提供错误代码的错误原因,没有错误位置,不能指到源代码错误,只能指示到构键后的位置</p>
-<pre><code>eval-source-map   --&gt;   内联
-</code></pre>
-<p>1.每个文件都有对应的source-map,并且都在eval中</p>
-<p>2.错误代码的准确信息以及源代码的错误位置(从f12中的soucer中看) 类似于上source-map</p>
-<pre><code>nosources-source-map --&gt;外部
-</code></pre>
-<p>提供错误代码的错误信息,没有任何源代码信息 —&gt;隐藏源代码hidden,nosources</p>
-<pre><code>cheap-source-map --&gt;外部
-</code></pre>
-<p> 错误代码的准确信息以及源代码的错误位置(从f12中的soucer中看),</p>
-<p> 区别source-map   -=–仅能精确到行</p>
-<pre><code>cheap-module-source-map --&gt;外部
-</code></pre>
-<p>错误代码的准确信息以及源代码的错误位置</p>
-<p>module会将loader的source,map加入</p>
-<p>内联与外部区别:</p>
-<p>1.外部生成的文件,内联没有</p>
-<p>2.内联更快</p>
-<h2 id="3、使用场景"><a href="#3、使用场景" class="headerlink" title="3、使用场景"></a>3、使用场景</h2><h3 id="（1）开发环境-速度快-调试友好"><a href="#（1）开发环境-速度快-调试友好" class="headerlink" title="（1）开发环境:速度快,调试友好"></a>（1）开发环境:速度快,调试友好</h3><p>速度快:eval –inline –cheap</p>
-<p>eval-cheap-souce-map(1,3组合)  因为这时cheap仅仅精确到行,列忽略</p>
-<p> 调试友好:</p>
-<p>source-map</p>
-<p>cheap-module-source-map</p>
-<p>cheap-source-map</p>
-<p>所以：<br>平衡感觉:eval-source-map(vue,react脚手架中使用)  /eval-cheap-module-source-map（就是没有列的信息）</p>
-<h3 id="（2）生产环境下-源代码是否需要隐藏-调试是否需要友好"><a href="#（2）生产环境下-源代码是否需要隐藏-调试是否需要友好" class="headerlink" title="（2）生产环境下:源代码是否需要隐藏,调试是否需要友好"></a>（2）生产环境下:源代码是否需要隐藏,调试是否需要友好</h3><p>隐藏hidden,nosources</p>
-<p>注意:内联导致代码非常,大,所有使用外部方式</p>
-<pre><code>nosources-source-map-全部隐藏
-hidden-source-map之隐藏元源代码,会提示构建之后的错误信息
-</code></pre>
-<p>推荐:source-map  / cheap-module-souce-map</p>
-<h2 id="4、使用方法："><a href="#4、使用方法：" class="headerlink" title="4、使用方法："></a>4、使用方法：</h2><pre><code>devtool:'eval-source-map' //开发
-</code></pre>
-<h1 id="3、优化打包速度"><a href="#3、优化打包速度" class="headerlink" title="3、优化打包速度"></a>3、优化打包速度</h1><h2 id="1-oneOf"><a href="#1-oneOf" class="headerlink" title="1.oneOf"></a>1.oneOf</h2><p>当在oneOf里面进行寻找loader时，但找到一个<strong>直接进行返回</strong>，注意如果有一种文件对应<strong>多种</strong>loader时，其余的放在oneof之外</p>
-<h3 id="使用："><a href="#使用：" class="headerlink" title="使用："></a>使用：</h3><pre><code>{
-oneOf：[
-        test:'/\.js$/'    ......
-    ]
-}
-</code></pre>
-<p>把之前的loader放置在oneOf的大数组中，并用{}对数组进行包裹</p>
-<h2 id="2-缓存"><a href="#2-缓存" class="headerlink" title="2.缓存"></a>2.缓存</h2><h3 id="（1）babel缓存"><a href="#（1）babel缓存" class="headerlink" title="（1）babel缓存"></a>（1）babel缓存</h3><pre><code>cacheDirectory:true ----&gt;第二次打包构建速度更快
-</code></pre>
-<p>直接在presets数组后面的，加这一句话，表示开始babel缓存</p>
-<h3 id="（2）文件资源缓存（优化代码运行）"><a href="#（2）文件资源缓存（优化代码运行）" class="headerlink" title="（2）文件资源缓存（优化代码运行）"></a>（2）文件资源缓存（优化代码运行）</h3><p>hash:每次webpack打包生成的唯一hash值</p>
-<p>问题：由于js与css同时使用一个hash值，如果重新打包，会导致所有打包失效</p>
-<p>但是可能只是改变了一个文件</p>
-<p>chunkhash:根据chunk生成的hash值，如果打包同一个chunk，那么打包一样</p>
-<p>问题：js与csshash值还是一样的</p>
-<p>因为css是在js文件中被引入的，所有属于一个chunk（一个入口文件的所有依赖css，js文件，这些与入口形成一个代码块–chunk）</p>
-<p>contenthash：根据文件的内容生成hash’值，不同的文件内容hash值一定不一样</p>
-<p>—》让代码上线运行缓存更好用</p>
-<pre><code>  output:{
-    filename:'js/built.[contenthash:10].js',
-    path:resolve(__dirname,'build')
-},
-</code></pre>
-<h1 id="4、优化代码运行的性能"><a href="#4、优化代码运行的性能" class="headerlink" title="4、优化代码运行的性能"></a>4、优化代码运行的性能</h1><h2 id="1-缓存-hash-chunkhash-contenthash-见上"><a href="#1-缓存-hash-chunkhash-contenthash-见上" class="headerlink" title="1.缓存(hash-chunkhash-contenthash)  见上"></a>1.缓存(hash-chunkhash-contenthash)  见上</h2><h2 id="2-tree-shaking"><a href="#2-tree-shaking" class="headerlink" title="2.tree shaking"></a>2.tree shaking</h2><h3 id="使用：-1"><a href="#使用：-1" class="headerlink" title="使用："></a>使用：</h3><p>1.必须使用ES6模块化</p>
-<p>2.开启production环境</p>
-<p>主要在于去除无用的代码，，减少代码打包的体积</p>
-<h3 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h3><p> 在package.js”中配置sideEffects”:false，</p>
-<p>—》这代表所有代码都是没有副作用的—都可以进行tree shaking</p>
-<pre><code>问题：可能干掉css/@babel/polyfill被认为是副作用文件，被干掉
-</code></pre>
-<ul>
-<li><pre><code> 解决："sideEffects":["*.css","*.less"]
-</code></pre>
-</li>
-</ul>
-<h2 id="3-code-split-–代码分割"><a href="#3-code-split-–代码分割" class="headerlink" title="3.code split –代码分割"></a>3.code split –代码分割</h2><h3 id="1、通过entry进行文件输出，输出多个文件-多入口"><a href="#1、通过entry进行文件输出，输出多个文件-多入口" class="headerlink" title="1、通过entry进行文件输出，输出多个文件(多入口)"></a>1、通过entry进行文件输出，输出多个文件(多入口)</h3><h3 id="2、optimization设置"><a href="#2、optimization设置" class="headerlink" title="2、optimization设置"></a>2、optimization设置</h3><p>1.可以自动将node_module中的代码打包为一个chunk进行输出</p>
-<p>2.自动分析多入口chunk中，有没有公共文件，有的话单独打包为一个chunk<br>    optimization:{<br>        splitChunks:{<br>            chunks:”all”<br>        }<br>    },</p>
-<h3 id="3、使用js使文件单独打包："><a href="#3、使用js使文件单独打包：" class="headerlink" title="3、使用js使文件单独打包："></a>3、使用js使文件单独打包：</h3><pre><code>// 使后面的test.js进行单独打包
- import (/* webpackChunkName:'test'*/'./test.js')
- .then(({mul,count})=&gt;{
-     console.log(mul(2,5))
- }).catch(()=&gt;{
-     console.log('文件加载失败')
- })
-</code></pre>
-<p>这种使用js语法让<strong>某个</strong>文件打包为一个chunk</p>
-<p>即使用import的动态打包</p>
-<p>而webpackChunkName则是名字的固体规范否则是hash动态变化值</p>
-<h2 id="4-懒加载与预加载"><a href="#4-懒加载与预加载" class="headerlink" title="4.懒加载与预加载"></a>4.懒加载与预加载</h2><p>一个是真的不点击不加载，一个是等着其他加载完了，会偷偷加载</p>
-<p>在原js文件中设置、</p>
-<p>预加载：</p>
-<pre><code>import (/* webpackChunkName:'test',webpackPrefetch:true */'./test').then(({mul}) =&gt;{
-    console.log(mul(4,6))
-})
-</code></pre>
-<p>懒加载：</p>
-<pre><code>import (/* webpackChunkName:'test'*/'./test').then(({mul}) =&gt;{
-    console.log(mul(4,6))
-})
-</code></pre>
-<p>合理使用prefetch可以防止出现点击延迟的问题，等着浏览器空闲时加载也是可以的</p>
-<p>当然了延迟也是第一次延迟，只会内存中就有了，不延迟了</p>
-<h1 id="5、其他设置"><a href="#5、其他设置" class="headerlink" title="5、其他设置"></a>5、其他设置</h1><h2 id="1-pwa-—-渐进式网路开发应用程序（保障离线也可以访问）"><a href="#1-pwa-—-渐进式网路开发应用程序（保障离线也可以访问）" class="headerlink" title="1.pwa — 渐进式网路开发应用程序（保障离线也可以访问）"></a>1.pwa — 渐进式网路开发应用程序（保障离线也可以访问）</h2><p>实现：</p>
-<p>workbox实现—》webpack体现为workbox-webpack-plugin</p>
-<p>代码：</p>
-<pre><code>const WorkboxWebpackPlugin = require('workbox-webpack-plugin')
- new WorkboxWebpackPlugin.GenerateSW({
-            // 先设置配置,作用：
-            /*
-            1、帮助serviceworker快速启动
-            2、删除旧的serviceworker
-
-            最后生成一个serviceWorker配置文件，之后通过它在入口js文件注册
-            */
-          clientsClaim:true,
-          skipWaiting:true
-        })
-</code></pre>
-<p>js入口:</p>
-<pre><code>// 注意这里的servWorker的写法为小驼峰式，第一个小写，其余为大写 
-if('serviceWorker' in navigator){
-window.addEventListener('load',()=&gt;{
-    // 这个文件之后由webpack中的生成
-    navigator.serviceWorker.register('/service-worker.js').then(()=&gt;{
-        // 通过then与catch判断是否成功
-        console.log('sw注册成功')
-    })
-    .catch(()=&gt;{
-        console.log('注册sw失败')
-    })
-})
-}
-// 成功之后，会在f12中的application中生成一个service Workers
-//          且Cache中的Cache Storage中会有对应文件的缓存
-</code></pre>
-<h3 id="配置问题"><a href="#配置问题" class="headerlink" title="配置问题"></a>配置问题</h3><p>1、eslint不认识window，navigator全局变量</p>
-<p> 解决：修改package。json中的eslintConfig配置</p>
-<pre><code>"env":{
-      "browser":true  //支持浏览器全局变量,browser表示浏览器
-}
-</code></pre>
-<p>2.sw必须运行在服务器上  –nodejs</p>
-<p> npm i serve -g   快速创建一个静态资源服务器</p>
-<p> 多了一个指令：– serve -s build  –build表示运行代码的目录</p>
-<p> 之后：会启动一个服务器，将build目录下的静态资源进行部署</p>
-<h2 id="2-externals-–cdn引入文件，不会打包"><a href="#2-externals-–cdn引入文件，不会打包" class="headerlink" title="2.externals  –cdn引入文件，不会打包"></a>2.externals  –cdn引入文件，不会打包</h2><p>在webpack.congfig.js中设置：</p>
-<pre><code>externals:{
-    // 忽略的库名  --npm包名
-    jquery:'jQuery'
-    //目的就是禁止，jquery被打包，但是注意：需要在src中的html中进行引入
-    // 加一个cdn链接引入，拒绝进行打包
-}
-</code></pre>
-<p>表示对某文件的禁用</p>
-<p>之后需要在使用的文件中，用cdn方式进行引入</p>
-<h2 id="3-dll"><a href="#3-dll" class="headerlink" title="3.dll"></a>3.dll</h2><p>当第三方文件需要对文件进行打包引入时，使用dll对文件进行单独打包，注意开始先运行一下webpack.dll.js(webpack –config webpack.dll.js)</p>
-<p>webpack.dll.js:</p>
-<pre><code>const {resolve} = require('path')
-const webpack = require('webpack')
-
-module.exports = {
-entry:{
-    // 最终打包生成的[name]  --&gt;jquery
-    // ['jquery'] --&gt;要打包的库是jquery
-    jquery:['jquery']
-},
-output:{
-    filename:'[name].js',
-    //通过resolve进行绝对路径的拼接
-    path: resolve(__dirname,'dll'),
-    library:'[name]_[hash]',//打包的库向外暴露的内容叫啥名字
-},
-// 前面专门为了打报jquery
-
-plugins:[
-    // 打包生成一个manifest.json  ----》提供一个jquery映射关系
-    new webpack.DllPlugin({
-        name:'[name]_[hash]',  //映射哭的暴露的内容是什么
-        path:resolve(__dirname,'dll/manifest.json')  //输出路径
-    })
-],
-mode:'production'
-}
-</code></pre>
-<p>之后在webpack.config.js文件中进行声明（那些忽略,那些进行引入）</p>
-<pre><code>    // 告诉webpack那些库不参与打包，同时使用时的库也需要修改
-    new webpack.DllReferencePlugin({
-        manifest: resolve(__dirname, 'dll/manifest.json')    //忽略jquery
-    }),
-    // 将某个文件打包输出出去，并在html中自动引入修改
-    new AddssetHtmlWebpackPlugin({
-        filepath:resolve(__dirname,'dll/jquery.js')        //将之前打包的引入
-    })
-</code></pre>
-
-    
-
-    
-
-    
-
-  </div>
-  <div class="article-info article-info-index">
-    
-    
-    
-	<div class="article-category tagcloud">
-		<i class="icon-book icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/webpack学习//" class="article-tag-list-link color5">webpack学习</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-
-    
-    <p class="article-more-link">
-      <a class="article-more-a" href="/2021/04/26/webpack%E5%AD%A6%E4%B9%A0/webpack%E7%8E%AF%E5%A2%83%E4%BC%98%E5%8C%96/">展开全文 >></a>
-    </p>
-    
-
-    
-    <div class="clearfix"></div>
-  </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
-    <article id="post-webpack学习/webpacks生产环境配置" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-  
-  
-    <h1 itemprop="name">
-	
-	  <a class="article-title" href="/2021/04/26/webpack%E5%AD%A6%E4%B9%A0/webpacks%E7%94%9F%E4%BA%A7%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE/" target="_blank">webpack生产环境配置</a>
-  
-    </h1>
-  
-
-
-  
-  
-<a href="/2021/04/26/webpack%E5%AD%A6%E4%B9%A0/webpacks%E7%94%9F%E4%BA%A7%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE/" class="archive-article-date">
-        <time datetime="2021-04-26T01:59:12.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-04-26</time>
-</a>
-
-  
-  
-    
-
-  
-  </header>
-  
-  <div class="article-entry" itemprop="articleBody">
-    
-    
-    
-    <h1 id="webpack生产环境的配置"><a href="#webpack生产环境的配置" class="headerlink" title="webpack生产环境的配置"></a>webpack生产环境的配置</h1><p>主要内容就是。实现css的单独提取，把js，css，html文件实现压缩以及语法的检查：</p>
-<h2 id="代码："><a href="#代码：" class="headerlink" title="代码："></a>代码：</h2><pre><code>const {resolve} = require('path')
-const MiniCssExtractPlugin = require('mini-css-extract-plugin')
-const yasucss = require("optimize-css-assets-webpack-plugin")
-const HtmlWebpackPlugin = require('html-webpack-plugin')
-
-//定义nodejs环境变量，确定browlist的环境
-process.env.NODE_ENV = 'production'
-
-// 减少代码的复用
-const commonCssLoader = [
-MiniCssExtractPlugin.loader,
-'css-loader',
-{
-    loader: 'postcss-loader',
-    options: {
-        ident: 'postcss',
-        plugins: () =&gt; [
-            // 使用postcss的插件
-            require('postcss-preset-env')()
-        ]
-    }
-}
-]
-
-// commonjs语法暴露对象
-module.exports = {
-entry: './src/js/index.js',
-output: {
-    filename: 'js/built.js',
-    path: resolve(__dirname, 'build')
-},
-module: {
-    rules: [{
-            test: /\.css$/,
-            use: [
-                // 把css提取为单独文件
-                // 还需要对browserslist的定义
-               ...commonCssLoader
-
-            ]
-        },
-        {
-
-            test: /\.less$/,
-            use: [
-                // 把css提取为单独文件
-                ...commonCssLoader,
-                'less-loader'
-            ]
-        },
-        // 正常来说一个文件要被一个loader处理
-        //一旦被多个loader处理要明白,loader的执行顺序 :
-        // 先执行eslint,在执行babel
-
-        //js语法配置:
-        {
-            // package.json中的eslintConfig进行配置写法  --airbnb
-            test: /\.js$/,
-            exclude: /node_modules/,
-            // 下面表示优先执行
-            enforce: 'pre',
-            loader: 'eslint-loader',
-            options: {
-                fix: true
-            }
-        },
-        {
-            test: /\.js$/,
-            exclude: /node_modules/,
-            loader: 'babel-loader',
-            options: {
-                presets: [
-                  [ 
-                       '@babel/preset-env',
-                    {
-                        //值进行按需加载
-                        useBuiltIns: 'usage',
-                            //指定corejs的版本
-                        corejs: {
-                            version: 3
-                        },
-                        targets: {
-                            chrome: '60',
-                            firefox: '50'
-                        }
-                    }
-                ]
-                ]
-            }
-        },
-        {
-            test: /\.(jpg|png|gif)/,
-            loader: 'url-loader',
-            options: {
-                limit: 8 * 1024,
-                name: '[hash:10].[ext]',
-                // 输出路径
-                outputPath: 'imgs',
-                esModule: false
-            }
-        },
-        {
-            test: /\.html$/,
-            loader: 'html-loader'
-        },
-        {
-            exclude: /\.(js|css|less|html|jpg|png|gif)/,
-            loader: 'file-loader',
-            options: {
-                outputPath: 'media'
-            }
-        }
-    ]
-},
-
-plugins: [
-    new MiniCssExtractPlugin({
-        // 修改路径
-        filename: 'css/built.css'
-    }),
-    new yasucss(),
-    new HtmlWebpackPlugin({
-        template: "./src/index.html",
-        //压缩html
-        minify: {
-        minify:{
-            //移除空格
-            collapseWhitespace:true,
-            // 移除注释
-            removeComments:true
-        }
-        }
-    })
-
-],
-mode: "production"
-}
-</code></pre>
-<h2 id="2、解释"><a href="#2、解释" class="headerlink" title="2、解释"></a>2、解释</h2><h3 id="（1）css的单独打包"><a href="#（1）css的单独打包" class="headerlink" title="（1）css的单独打包"></a>（1）css的单独打包</h3><p>主要通过mini-css-extract-plugin实现，并且用它来代替原来的style loader ：</p>
-<pre><code>const MiniCssExtract = require('mini-css-extract-plugin')
-
-// 'style-loader',
-// 这里原本表示创建style标签，把css存入js文件中
-   MiniCssExtract.loader,
-   // 上面的Mini取代style-loader保证取代js中，变为css文件,单独提取css，保证速度
-</code></pre>
-<h3 id="（2）css兼容性处理："><a href="#（2）css兼容性处理：" class="headerlink" title="（2）css兼容性处理："></a>（2）css兼容性处理：</h3><p>css兼容性处理：postcss –需要postcss-loader ，</p>
-<p>还需要插件postcss-preset-env用于帮助postcss识别某些环境，从而加载指定的配置，用于保证兼容性<br>帮post-css找到package.json中的browserslist里的配置，通过配置加载指定的css兼容样式.</p>
-<p>package.json的设置：</p>
-<pre><code> "browserslist":{
-    "development":[
-        "last 1 chrome version",
-        "last 1 firefox version",
-        "last 1 safari version"
-    ],
-    "production":[
-        "&gt;0.2%",
-        //   后面表示不要什么浏览器
-         "not dead",
-        "not op_mini all"
-    ]   
- }
-</code></pre>
-<p>postcss实际处理代码见上面例子，需要在loader中写明，并且在plugins中注明打包的位置</p>
-<h3 id="3、压缩css"><a href="#3、压缩css" class="headerlink" title="3、压缩css"></a>3、压缩css</h3><p>两步：<br>    const optimzieCssAssetsWebpackPlugin = require(‘optimize-css-assets-webpack-plugin’)</p>
-<pre><code>new optimzieCssAssetsWebpackPlugin()
-</code></pre>
-<h3 id="4、js语法检查"><a href="#4、js语法检查" class="headerlink" title="4、js语法检查"></a>4、js语法检查</h3><h4 id="目的："><a href="#目的：" class="headerlink" title="目的："></a>目的：</h4><p>语法检查：保证工作时，写的代码大致一样 —》eslint，</p>
-<p>此时需要eslint-loader，与eslint库</p>
-<p>注意：只检查自己写的源代码，第三方的库不用检查</p>
-<p>注意在package.json中需要进行设置</p>
-<pre><code>"eslintConfig":{
-    "extends":"airbnb-base"   //确定配置
- }
-</code></pre>
-<p>使用的是airbnb规则，需要 eslint-config-airbnb-base eslint eslint-plugin-import</p>
-<p>loader中的内容见上</p>
-<h3 id="4、js兼容性处理-—高级语法的简化"><a href="#4、js兼容性处理-—高级语法的简化" class="headerlink" title="4、js兼容性处理  —高级语法的简化"></a>4、js兼容性处理  —高级语法的简化</h3><p>首先注意当loader的引入是use方法时,<strong>不能进行options设置,否则报错</strong></p>
-<p>只能通过单个loader设置: loader:’babel-loader’,才可以设置option参数</p>
-<h4 id="进行兼容性处理的方法及压缩"><a href="#进行兼容性处理的方法及压缩" class="headerlink" title="进行兼容性处理的方法及压缩"></a>进行兼容性处理的方法及压缩</h4><pre><code>js兼容性处理：babel-loader
-</code></pre>
-<p>1、它的配置的包还有@babel/preset-env，@babel/core<br>把es6相关东西变为es5的东西<br>问题：只能修改基础语法~~，例如Promise不可以改变</p>
-<p>2、全部js兼容性处理 –》@babel/polyfill</p>
-<p>这个在原文件中通过import引用即可<br>问题：由于我只需要解决部分兼容性问题，但是全部引入，所以会增大代码的体积</p>
-<p>3、需要做兼容性处理的就做：按需加载 –》core-js</p>
-<p>具体代码见上</p>
-<h4 id="压缩-在production环境下会自动进行压缩"><a href="#压缩-在production环境下会自动进行压缩" class="headerlink" title="压缩:在production环境下会自动进行压缩"></a>压缩:在production环境下会自动进行压缩</h4>
-    
-
-    
-
-    
-
-  </div>
-  <div class="article-info article-info-index">
-    
-    
-    
-	<div class="article-category tagcloud">
-		<i class="icon-book icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/webpack学习//" class="article-tag-list-link color5">webpack学习</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-
-    
-    <p class="article-more-link">
-      <a class="article-more-a" href="/2021/04/26/webpack%E5%AD%A6%E4%B9%A0/webpacks%E7%94%9F%E4%BA%A7%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE/">展开全文 >></a>
-    </p>
-    
-
-    
-    <div class="clearfix"></div>
-  </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
   
     <nav id="page-nav">
       <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/6/">6</a><a class="extend next" rel="next" href="/page/2/">Next &amp;raquo;</a>
@@ -2734,6 +2641,10 @@ mode: "production"
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">初学</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">axios</a>
               </li>
             
             <div class="clearfix"></div>

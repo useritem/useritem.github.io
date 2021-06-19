@@ -285,6 +285,266 @@
 
 
   
+    <article id="post-node与vue初学/第二天日志" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+  
+  
+    <h1 itemprop="name">
+	
+	  <a class="article-title" href="/2021/03/30/node%E4%B8%8Evue%E5%88%9D%E5%AD%A6/%E7%AC%AC%E4%BA%8C%E5%A4%A9%E6%97%A5%E5%BF%97/" target="_blank">第二天日志</a>
+  
+    </h1>
+  
+
+
+  
+  
+<a href="/2021/03/30/node%E4%B8%8Evue%E5%88%9D%E5%AD%A6/%E7%AC%AC%E4%BA%8C%E5%A4%A9%E6%97%A5%E5%BF%97/" class="archive-article-date">
+        <time datetime="2021-03-30T07:12:28.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-03-30</time>
+</a>
+
+  
+  
+    
+
+  
+  </header>
+  
+  <div class="article-entry" itemprop="articleBody">
+    
+    
+    
+    <h1 id="第二天日志"><a href="#第二天日志" class="headerlink" title="第二天日志"></a>第二天日志</h1><h2 id="一、Node-js-交互式解释器（REPL）的学习"><a href="#一、Node-js-交互式解释器（REPL）的学习" class="headerlink" title="一、Node.js 交互式解释器（REPL）的学习"></a>一、Node.js 交互式解释器（REPL）的学习</h2><p>###1、基本作用<br>表示一个电脑环境，可以在终端输入命令并接受系统响应</p>
+<p>并且node自带交互式解释器，可以执行读取，执行，打印，循环的任务，<strong>方便调试JS代码</strong></p>
+<h3 id="2、开启及使用"><a href="#2、开启及使用" class="headerlink" title="2、开启及使用"></a>2、开启及使用</h3><p>（1）开启终端 —–》》$     node<br>     &gt; </p>
+<p>之后可以在&gt;输入简单的表达式，回车进行计算，</p>
+<p><strong>注意：</strong>里面可以进行数据储存于变量中，以var声明，且可以console log()输出</p>
+<p>并且支持<em>多行表达式</em> 可以使用{}</p>
+<p>并且支持使用下划线(_)获取上一个表达式的运算结果，样例：</p>
+<pre><code>&gt;{ var x =20;
+
+  ...var y =10;
+
+ ...x + y}
+</code></pre>
+<p>30</p>
+<pre><code>&gt; var sum = _
+</code></pre>
+<p>undefined</p>
+<pre><code>&gt; console.log(sum)
+</code></pre>
+<p>30</p>
+<p>undefined</p>
+<pre><code>&gt;
+</code></pre>
+<h3 id="REPL命令"><a href="#REPL命令" class="headerlink" title="REPL命令"></a>REPL命令</h3><p><a target="_blank" rel="noopener" href="https://imgchr.com/i/rKgdMV"><img src="https://s3.ax1x.com/2020/12/15/rKgdMV.png" alt="rKgdMV.png"></a></p>
+<h2 id="二、Node-js-回调函数"><a href="#二、Node-js-回调函数" class="headerlink" title="二、Node.js 回调函数"></a>二、Node.js 回调函数</h2><p>回调是Node.js 异步编程的直接体现，异步编程依托于回调，回调例子：</p>
+<p>我们可以一边读取文件，一边执行其他命令，在文件读取完成后，我们将文件内容作为回调函数的参数返回。这样在执行代码时就没有阻塞或等待文件 I/O 操作。</p>
+<p>意义：这就大大提高了 Node.js 的性能，可以处理大量的并发请求。回调函数一般作为函数的最后一个<strong>参数</strong>出现：</p>
+<pre><code>function foo1(name, age, callback) { }
+function foo2(value, callback1, callback2) { }
+</code></pre>
+<h2 id="三、常见的shell指令"><a href="#三、常见的shell指令" class="headerlink" title="三、常见的shell指令"></a>三、常见的shell指令</h2><p><a target="_blank" rel="noopener" href="https://imgchr.com/i/rMOSa9"><img src="https://s3.ax1x.com/2020/12/15/rMOSa9.png" alt="rMOSa9.png"></a></p>
+<h2 id="四、今日成就"><a href="#四、今日成就" class="headerlink" title="四、今日成就"></a>四、今日成就</h2><p>在已初始化（node init -y）的文件中，进行脚本修改，并执行相应的结果</p>
+
+    
+
+    
+
+    
+
+  </div>
+  <div class="article-info article-info-index">
+    
+    
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">初学</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+    
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/node与vue初学//" class="article-tag-list-link color1">node与vue初学</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+
+    
+    <p class="article-more-link">
+      <a class="article-more-a" href="/2021/03/30/node%E4%B8%8Evue%E5%88%9D%E5%AD%A6/%E7%AC%AC%E4%BA%8C%E5%A4%A9%E6%97%A5%E5%BF%97/">展开全文 >></a>
+    </p>
+    
+
+    
+    <div class="clearfix"></div>
+  </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+    <article id="post-node与vue初学/第一天日志" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+  
+  
+    <h1 itemprop="name">
+	
+	  <a class="article-title" href="/2021/03/30/node%E4%B8%8Evue%E5%88%9D%E5%AD%A6/%E7%AC%AC%E4%B8%80%E5%A4%A9%E6%97%A5%E5%BF%97/" target="_blank">第一天学习</a>
+  
+    </h1>
+  
+
+
+  
+  
+<a href="/2021/03/30/node%E4%B8%8Evue%E5%88%9D%E5%AD%A6/%E7%AC%AC%E4%B8%80%E5%A4%A9%E6%97%A5%E5%BF%97/" class="archive-article-date">
+        <time datetime="2021-03-30T07:07:13.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-03-30</time>
+</a>
+
+  
+  
+    
+
+  
+  </header>
+  
+  <div class="article-entry" itemprop="articleBody">
+    
+    
+    
+    <h1 id="第一天学习"><a href="#第一天学习" class="headerlink" title="第一天学习"></a>第一天学习</h1><h2 id="一-npm的学习"><a href="#一-npm的学习" class="headerlink" title="一.npm的学习"></a>一.npm的学习</h2><h3 id="1-基础应用"><a href="#1-基础应用" class="headerlink" title="1.基础应用"></a>1.基础应用</h3><p>（1）版本查看    —- npm -v</p>
+<h3 id="2-初始化工程"><a href="#2-初始化工程" class="headerlink" title="2.初始化工程"></a>2.初始化工程</h3><p>（2）创建一个空目录—-mkdir testDir</p>
+<p>（3）进入此目录 —–cd testDir</p>
+<p>（4）初始化npm配置 —–npm init -y</p>
+<h3 id="3-安装依赖"><a href="#3-安装依赖" class="headerlink" title="3.安装依赖"></a>3.安装依赖</h3><p>（5） 指令格式 —-&gt;&gt; npm install $packageName</p>
+<p> 比如安装 jQuery—- npm install jquery</p>
+<p>执行完成后会生成node_modules文件目录，里面就有我们刚刚安装了jquery<br>同时package.json 中的 dependencies 属性也会多一项jquery的版本描述<br> 还会生成一个 package-lock.json ，对安装的依赖进行版本锁定</p>
+<p>(6) 安装生产阶段的包  —&gt;&gt;npm install jquery –save</p>
+<p> 安装开发阶段的包 npm install jquery –save-dev</p>
+<h3 id="4-卸载依赖"><a href="#4-卸载依赖" class="headerlink" title="4.卸载依赖"></a>4.卸载依赖</h3><p>(7)卸载生产环境的包</p>
+<p>npm uninstall $packageName –save</p>
+<p>(8) 卸载开发环境的包<br>npm uninstall $packageName -dev</p>
+<h2 id="二-npm的理解"><a href="#二-npm的理解" class="headerlink" title="二.npm的理解"></a>二.npm的理解</h2><p>为了解决nodeJs代码部署上的问题</p>
+<h3 id="使用场景："><a href="#使用场景：" class="headerlink" title="使用场景："></a>使用场景：</h3><p>允许用户从NPM服务器下载别人编写的第三方包到本地使用。</p>
+<p>允许用户从NPM服务器下载并安装别人编写的命令行程序到本地使用。</p>
+<p>允许用户将自己编写的包或命令行程序上传到NPM服务器供别人使用。</p>
+<h3 id="NPM-的思路大概是这样的："><a href="#NPM-的思路大概是这样的：" class="headerlink" title="NPM 的思路大概是这样的："></a>NPM 的思路大概是这样的：</h3><p>买个服务器作为代码仓库（registry），在里面放所有需要被<font style="color:red;">共享</font>的代码</p>
+<p>发邮件通知 jQuery、Bootstrap、Underscore 作者使用 npm publish 把代码提交到 registry 上，分别取名 jquery、bootstrap 和 underscore（注意大小写）</p>
+<p>社区里的其他人如果想使用这些代码，就把 jquery、bootstrap 和 underscore 写到 package.json 里，然后运行 npm install ，npm 就会帮他们下载代码</p>
+<p>下载完的代码出现在 node_modules (组件)目录里，可以随意使用了。</p>
+<h2 id="其他学习"><a href="#其他学习" class="headerlink" title="其他学习"></a>其他学习</h2><h3 id="1-git的相关操作"><a href="#1-git的相关操作" class="headerlink" title="1.git的相关操作"></a>1.git的相关操作</h3><p><a target="_blank" rel="noopener" href="https://imgchr.com/i/rurDvF"><img src="https://s3.ax1x.com/2020/12/14/rurDvF.png" alt="rurDvF.png"></a>  </p>
+<h3 id="2-cd-mkdir-rmdir-ls-pwd-操作"><a href="#2-cd-mkdir-rmdir-ls-pwd-操作" class="headerlink" title="2.cd mkdir rmdir ls pwd 操作"></a>2.cd mkdir rmdir ls pwd 操作</h3><p>（1） ls —查看linux文件夹下的文件</p>
+<h4 id="目录的相关操作"><a href="#目录的相关操作" class="headerlink" title="目录的相关操作"></a>目录的相关操作</h4><p>(2) mkdir — make directory.</p>
+<p>-m:配置所创建文件的权限。否则系统使用默认权限</p>
+<p>-p:自行创建多层目录</p>
+<p>(3) rmdir —- remove directory</p>
+<p>-p:连同上层的空目录一并删除。</p>
+<p>注：使用rmdir删除的只能是空目录，否则使用”rm -r“</p>
+<p>(4) cd —- change directory.</p>
+<p>用法很简单 –》 cd [相对路径或绝对路径]</p>
+<p>(5) pwd — print working directory.<br>  显示目前所在目录的命令。</p>
+<p>参数-p：显示实际路径，而不是连接文件的路径。</p>
+
+    
+
+    
+
+    
+
+  </div>
+  <div class="article-info article-info-index">
+    
+    
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">初学</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+    
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/node与vue初学//" class="article-tag-list-link color1">node与vue初学</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+
+    
+    <p class="article-more-link">
+      <a class="article-more-a" href="/2021/03/30/node%E4%B8%8Evue%E5%88%9D%E5%AD%A6/%E7%AC%AC%E4%B8%80%E5%A4%A9%E6%97%A5%E5%BF%97/">展开全文 >></a>
+    </p>
+    
+
+    
+    <div class="clearfix"></div>
+  </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
     <article id="post-hello-world" class="article article-type-post  article-index" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -509,6 +769,10 @@
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">初学</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">axios</a>
               </li>
             
             <div class="clearfix"></div>
