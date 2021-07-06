@@ -285,6 +285,1788 @@
 
 
   
+    <article id="post-webpack学习/webpacks生产环境配置" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+  
+  
+    <h1 itemprop="name">
+	
+	  <a class="article-title" href="/2021/04/26/webpack%E5%AD%A6%E4%B9%A0/webpacks%E7%94%9F%E4%BA%A7%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE/" target="_blank">webpack生产环境配置</a>
+  
+    </h1>
+  
+
+
+  
+  
+<a href="/2021/04/26/webpack%E5%AD%A6%E4%B9%A0/webpacks%E7%94%9F%E4%BA%A7%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE/" class="archive-article-date">
+        <time datetime="2021-04-26T01:59:12.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-04-26</time>
+</a>
+
+  
+  
+    
+
+  
+  </header>
+  
+  <div class="article-entry" itemprop="articleBody">
+    
+    
+    
+    <h1 id="webpack生产环境的配置"><a href="#webpack生产环境的配置" class="headerlink" title="webpack生产环境的配置"></a>webpack生产环境的配置</h1><p>主要内容就是。实现css的单独提取，把js，css，html文件实现压缩以及语法的检查：</p>
+<h2 id="代码："><a href="#代码：" class="headerlink" title="代码："></a>代码：</h2><pre><code>const {resolve} = require('path')
+const MiniCssExtractPlugin = require('mini-css-extract-plugin')
+const yasucss = require("optimize-css-assets-webpack-plugin")
+const HtmlWebpackPlugin = require('html-webpack-plugin')
+
+//定义nodejs环境变量，确定browlist的环境
+process.env.NODE_ENV = 'production'
+
+// 减少代码的复用
+const commonCssLoader = [
+MiniCssExtractPlugin.loader,
+'css-loader',
+{
+    loader: 'postcss-loader',
+    options: {
+        ident: 'postcss',
+        plugins: () =&gt; [
+            // 使用postcss的插件
+            require('postcss-preset-env')()
+        ]
+    }
+}
+]
+
+// commonjs语法暴露对象
+module.exports = {
+entry: './src/js/index.js',
+output: {
+    filename: 'js/built.js',
+    path: resolve(__dirname, 'build')
+},
+module: {
+    rules: [{
+            test: /\.css$/,
+            use: [
+                // 把css提取为单独文件
+                // 还需要对browserslist的定义
+               ...commonCssLoader
+
+            ]
+        },
+        {
+
+            test: /\.less$/,
+            use: [
+                // 把css提取为单独文件
+                ...commonCssLoader,
+                'less-loader'
+            ]
+        },
+        // 正常来说一个文件要被一个loader处理
+        //一旦被多个loader处理要明白,loader的执行顺序 :
+        // 先执行eslint,在执行babel
+
+        //js语法配置:
+        {
+            // package.json中的eslintConfig进行配置写法  --airbnb
+            test: /\.js$/,
+            exclude: /node_modules/,
+            // 下面表示优先执行
+            enforce: 'pre',
+            loader: 'eslint-loader',
+            options: {
+                fix: true
+            }
+        },
+        {
+            test: /\.js$/,
+            exclude: /node_modules/,
+            loader: 'babel-loader',
+            options: {
+                presets: [
+                  [ 
+                       '@babel/preset-env',
+                    {
+                        //值进行按需加载
+                        useBuiltIns: 'usage',
+                            //指定corejs的版本
+                        corejs: {
+                            version: 3
+                        },
+                        targets: {
+                            chrome: '60',
+                            firefox: '50'
+                        }
+                    }
+                ]
+                ]
+            }
+        },
+        {
+            test: /\.(jpg|png|gif)/,
+            loader: 'url-loader',
+            options: {
+                limit: 8 * 1024,
+                name: '[hash:10].[ext]',
+                // 输出路径
+                outputPath: 'imgs',
+                esModule: false
+            }
+        },
+        {
+            test: /\.html$/,
+            loader: 'html-loader'
+        },
+        {
+            exclude: /\.(js|css|less|html|jpg|png|gif)/,
+            loader: 'file-loader',
+            options: {
+                outputPath: 'media'
+            }
+        }
+    ]
+},
+
+plugins: [
+    new MiniCssExtractPlugin({
+        // 修改路径
+        filename: 'css/built.css'
+    }),
+    new yasucss(),
+    new HtmlWebpackPlugin({
+        template: "./src/index.html",
+        //压缩html
+        minify: {
+        minify:{
+            //移除空格
+            collapseWhitespace:true,
+            // 移除注释
+            removeComments:true
+        }
+        }
+    })
+
+],
+mode: "production"
+}
+</code></pre>
+<h2 id="2、解释"><a href="#2、解释" class="headerlink" title="2、解释"></a>2、解释</h2><h3 id="（1）css的单独打包"><a href="#（1）css的单独打包" class="headerlink" title="（1）css的单独打包"></a>（1）css的单独打包</h3><p>主要通过mini-css-extract-plugin实现，并且用它来代替原来的style loader ：</p>
+<pre><code>const MiniCssExtract = require('mini-css-extract-plugin')
+
+// 'style-loader',
+// 这里原本表示创建style标签，把css存入js文件中
+   MiniCssExtract.loader,
+   // 上面的Mini取代style-loader保证取代js中，变为css文件,单独提取css，保证速度
+</code></pre>
+<h3 id="（2）css兼容性处理："><a href="#（2）css兼容性处理：" class="headerlink" title="（2）css兼容性处理："></a>（2）css兼容性处理：</h3><p>css兼容性处理：postcss –需要postcss-loader ，</p>
+<p>还需要插件postcss-preset-env用于帮助postcss识别某些环境，从而加载指定的配置，用于保证兼容性<br>帮post-css找到package.json中的browserslist里的配置，通过配置加载指定的css兼容样式.</p>
+<p>package.json的设置：</p>
+<pre><code> "browserslist":{
+    "development":[
+        "last 1 chrome version",
+        "last 1 firefox version",
+        "last 1 safari version"
+    ],
+    "production":[
+        "&gt;0.2%",
+        //   后面表示不要什么浏览器
+         "not dead",
+        "not op_mini all"
+    ]   
+ }
+</code></pre>
+<p>postcss实际处理代码见上面例子，需要在loader中写明，并且在plugins中注明打包的位置</p>
+<h3 id="3、压缩css"><a href="#3、压缩css" class="headerlink" title="3、压缩css"></a>3、压缩css</h3><p>两步：<br>    const optimzieCssAssetsWebpackPlugin = require(‘optimize-css-assets-webpack-plugin’)</p>
+<pre><code>new optimzieCssAssetsWebpackPlugin()
+</code></pre>
+<h3 id="4、js语法检查"><a href="#4、js语法检查" class="headerlink" title="4、js语法检查"></a>4、js语法检查</h3><h4 id="目的："><a href="#目的：" class="headerlink" title="目的："></a>目的：</h4><p>语法检查：保证工作时，写的代码大致一样 —》eslint，</p>
+<p>此时需要eslint-loader，与eslint库</p>
+<p>注意：只检查自己写的源代码，第三方的库不用检查</p>
+<p>注意在package.json中需要进行设置</p>
+<pre><code>"eslintConfig":{
+    "extends":"airbnb-base"   //确定配置
+ }
+</code></pre>
+<p>使用的是airbnb规则，需要 eslint-config-airbnb-base eslint eslint-plugin-import</p>
+<p>loader中的内容见上</p>
+<h3 id="4、js兼容性处理-—高级语法的简化"><a href="#4、js兼容性处理-—高级语法的简化" class="headerlink" title="4、js兼容性处理  —高级语法的简化"></a>4、js兼容性处理  —高级语法的简化</h3><p>首先注意当loader的引入是use方法时,<strong>不能进行options设置,否则报错</strong></p>
+<p>只能通过单个loader设置: loader:’babel-loader’,才可以设置option参数</p>
+<h4 id="进行兼容性处理的方法及压缩"><a href="#进行兼容性处理的方法及压缩" class="headerlink" title="进行兼容性处理的方法及压缩"></a>进行兼容性处理的方法及压缩</h4><pre><code>js兼容性处理：babel-loader
+</code></pre>
+<p>1、它的配置的包还有@babel/preset-env，@babel/core<br>把es6相关东西变为es5的东西<br>问题：只能修改基础语法~~，例如Promise不可以改变</p>
+<p>2、全部js兼容性处理 –》@babel/polyfill</p>
+<p>这个在原文件中通过import引用即可<br>问题：由于我只需要解决部分兼容性问题，但是全部引入，所以会增大代码的体积</p>
+<p>3、需要做兼容性处理的就做：按需加载 –》core-js</p>
+<p>具体代码见上</p>
+<h4 id="压缩-在production环境下会自动进行压缩"><a href="#压缩-在production环境下会自动进行压缩" class="headerlink" title="压缩:在production环境下会自动进行压缩"></a>压缩:在production环境下会自动进行压缩</h4>
+    
+
+    
+
+    
+
+  </div>
+  <div class="article-info article-info-index">
+    
+    
+    
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/webpack学习//" class="article-tag-list-link color5">webpack学习</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+
+    
+    <p class="article-more-link">
+      <a class="article-more-a" href="/2021/04/26/webpack%E5%AD%A6%E4%B9%A0/webpacks%E7%94%9F%E4%BA%A7%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE/">展开全文 >></a>
+    </p>
+    
+
+    
+    <div class="clearfix"></div>
+  </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+    <article id="post-webpack学习/webpack开发环境配置" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+  
+  
+    <h1 itemprop="name">
+	
+	  <a class="article-title" href="/2021/04/26/webpack%E5%AD%A6%E4%B9%A0/webpack%E5%BC%80%E5%8F%91%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE/" target="_blank">webpack开发环境配置</a>
+  
+    </h1>
+  
+
+
+  
+  
+<a href="/2021/04/26/webpack%E5%AD%A6%E4%B9%A0/webpack%E5%BC%80%E5%8F%91%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE/" class="archive-article-date">
+        <time datetime="2021-04-26T01:57:25.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-04-26</time>
+</a>
+
+  
+  
+    
+
+  
+  </header>
+  
+  <div class="article-entry" itemprop="articleBody">
+    
+    
+    
+    <h1 id="webpack开发环境配置"><a href="#webpack开发环境配置" class="headerlink" title="webpack开发环境配置"></a>webpack开发环境配置</h1><p>对于development环境，主要就是直观上webpack不会进行代码压缩为一行，可以直接清除看看到源码</p>
+<p>开发环境主要要求的是，代码速度运行快，调试友好</p>
+<h2 id="1、主要内容"><a href="#1、主要内容" class="headerlink" title="1、主要内容"></a>1、主要内容</h2><p>分为打包css，js资源，html资源，打包图片资源，打包html中的图片资源，打包其他资源，devServer模式等</p>
+<p>例子：</p>
+<pre><code>/**
+ * 开发环境配置：主要保证代码运行正确
+ */
+const {resolve} = require('path')
+const HtmlWebpackPlugin = require('html-webpack-plugin')
+
+module.exports = {
+entry:'./src/index.js',
+
+output:{
+    filename:'built.js',
+    path:resolve(__dirname,'build')
+},
+module:{           // loader配置
+    rules:[
+        {    //处理less
+            test:/\.less$/,
+            use:[
+                'style-loader',
+                'css-loader',
+                'less-loader'
+            ]
+        },
+        {    //处理css
+            test:/\.css$/,
+            use:[
+                'style-loader',
+                'css-loader',
+            ]
+        },
+        {  //处理图片loader
+            test:/\.(jpg||png||gif)$/,
+            loader:'url-loader',
+            options:{
+                limit:20*1024,
+                name:'[hash:10].[ext]',
+                // 关闭es6模块规则，打开commonjs的规则
+                esModule:false
+            }
+        },
+        {  //处理html中的loader照片
+            test:/\.html$/,
+            loader:'html-loader'
+        },
+        {//处理其他资源
+            exclude:/\.(html||js||css||jpg||png||gif||less)$/,
+            loader:'file-loader',
+            options:{
+                name:'[hash:10].[ext]',
+            }
+        }
+    ]
+},
+plugins:[
+        new HtmlWebpackPlugin({
+            template:'./src/index.html'
+        })
+    
+],
+mode:'development',
+
+devServer:{
+    contentBase:resolve(__dirname,'build'),
+    // 启动gzip压缩，使代码体积小，运行快
+    compress:true,
+    // 开发服务器端口号
+    port:3000,
+
+    // 自动打开浏览器
+    open:true
+    }
+}
+</code></pre>
+<h2 id="2、注意："><a href="#2、注意：" class="headerlink" title="2、注意："></a>2、注意：</h2><h3 id="1-对于html图片资源进行打包时，webpack5-0以下版本注意："><a href="#1-对于html图片资源进行打包时，webpack5-0以下版本注意：" class="headerlink" title="1.对于html图片资源进行打包时，webpack5.0以下版本注意："></a>1.对于html图片资源进行打包时，webpack5.0以下版本注意：</h3><p>此时是commonjs模块语法,而<strong>url-loader默认是es6的语法</strong></p>
+<p>所以直接解析会出问题</p>
+<p>解决:关闭url-loader的es6模块化,使用commonJS解析</p>
+<pre><code>esModule:false在上面关
+</code></pre>
+
+    
+
+    
+
+    
+
+  </div>
+  <div class="article-info article-info-index">
+    
+    
+    
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/webpack学习//" class="article-tag-list-link color5">webpack学习</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+
+    
+    <p class="article-more-link">
+      <a class="article-more-a" href="/2021/04/26/webpack%E5%AD%A6%E4%B9%A0/webpack%E5%BC%80%E5%8F%91%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE/">展开全文 >></a>
+    </p>
+    
+
+    
+    <div class="clearfix"></div>
+  </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+    <article id="post-webpack学习/webpack初体验" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+  
+  
+    <h1 itemprop="name">
+	
+	  <a class="article-title" href="/2021/04/26/webpack%E5%AD%A6%E4%B9%A0/webpack%E5%88%9D%E4%BD%93%E9%AA%8C/" target="_blank">webpack初体验</a>
+  
+    </h1>
+  
+
+
+  
+  
+<a href="/2021/04/26/webpack%E5%AD%A6%E4%B9%A0/webpack%E5%88%9D%E4%BD%93%E9%AA%8C/" class="archive-article-date">
+        <time datetime="2021-04-26T01:56:17.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-04-26</time>
+</a>
+
+  
+  
+    
+
+  
+  </header>
+  
+  <div class="article-entry" itemprop="articleBody">
+    
+    
+    
+    <h1 id="1、webpack"><a href="#1、webpack" class="headerlink" title="1、webpack"></a>1、webpack</h1><h2 id="1、webpack介绍"><a href="#1、webpack介绍" class="headerlink" title="1、webpack介绍"></a>1、webpack介绍</h2><p>webpack 是一种前端资源构建工具，一个静态模块打包器(module bundler)。</p>
+<p> 在 webpack 看来, 前端的所有资源文件(js/json/css/img/less/…)都会作为模块处理。 </p>
+<p>它将根据模块的依赖关系进行静态分析，打包生成对应的静态资源(bundle)。</p>
+<p>解决问题主要可以也针对那些浏览器无法识别的问题，比如es6某些语法等等</p>
+<h2 id="2、学习思路及流程"><a href="#2、学习思路及流程" class="headerlink" title="2、学习思路及流程"></a>2、学习思路及流程</h2><p><a target="_blank" rel="noopener" href="https://imgtu.com/i/czbN40"><img src="https://z3.ax1x.com/2021/04/26/czbN40.png" alt="czbN40.png"></a></p>
+<h3 id="打包过程："><a href="#打包过程：" class="headerlink" title="打包过程："></a>打包过程：</h3><p>由于模块化思想，所以一个文件会引入项目中全部的资源构建工具的处理过程：</p>
+<p>（1）首先告诉webpack入口文件，（及以什么为起点进行打包）</p>
+<p>（2）之后记录依赖：‘$’,’./‘等等，并形成树状结构图</p>
+<p>（3）之后再根据图中依赖顺序进行引用，形成一个chunk代码块，</p>
+<p>（4）之后再对代码块进行处理，比如把less变为css等等，即为进行打包</p>
+<p>（5）最后再进行输出（搬动）</p>
+
+    
+
+    
+
+    
+
+  </div>
+  <div class="article-info article-info-index">
+    
+    
+    
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/webpack学习//" class="article-tag-list-link color5">webpack学习</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+
+    
+    <p class="article-more-link">
+      <a class="article-more-a" href="/2021/04/26/webpack%E5%AD%A6%E4%B9%A0/webpack%E5%88%9D%E4%BD%93%E9%AA%8C/">展开全文 >></a>
+    </p>
+    
+
+    
+    <div class="clearfix"></div>
+  </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+    <article id="post-js学习/js学习9" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+  
+  
+    <h1 itemprop="name">
+	
+	  <a class="article-title" href="/2021/04/20/js%E5%AD%A6%E4%B9%A0/js%E5%AD%A6%E4%B9%A09/" target="_blank">js学习9</a>
+  
+    </h1>
+  
+
+
+  
+  
+<a href="/2021/04/20/js%E5%AD%A6%E4%B9%A0/js%E5%AD%A6%E4%B9%A09/" class="archive-article-date">
+        <time datetime="2021-04-20T08:04:47.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-04-20</time>
+</a>
+
+  
+  
+    
+
+  
+  </header>
+  
+  <div class="article-entry" itemprop="articleBody">
+    
+    
+    
+    <h1 id="一、类"><a href="#一、类" class="headerlink" title="一、类"></a>一、类</h1><h2 id="1、介绍"><a href="#1、介绍" class="headerlink" title="1、介绍"></a>1、介绍</h2><p>es6所引入的类class，可以理解为新的基础性的语法糖结构，虽然是面向对象编程，但是背后仍是原型与构造函数的概念。</p>
+<h2 id="2、特点"><a href="#2、特点" class="headerlink" title="2、特点"></a>2、特点</h2><p>（1）类的声明不可以提升</p>
+<p>（2）类受块级作用域限制</p>
+<h2 id="3、构造"><a href="#3、构造" class="headerlink" title="3、构造"></a>3、构造</h2><pre><code>class a{
+    constructor(name){
+        this.name = name
+    //    sayhello = function(){
+    //        console.log('he')
+    //    }
+    //不能在构造函数中定义属性
+    }
+    age = 
+    sayname(){
+            console.log(this.name)
+    }
+}
+let bob = new a('bob')
+bob.sayname()
+</code></pre>
+<h3 id="注意"><a href="#注意" class="headerlink" title="注意"></a>注意</h3><p>类构造函数必须为new，如果没有new会报错，且constructor中只可以写属性，new时<strong>自动调用</strong></p>
+<h3 id="特殊："><a href="#特殊：" class="headerlink" title="特殊："></a>特殊：</h3><pre><code>class person{
+    say(){
+        console.log(`名字是${person.tname} 年龄是${this.age} my的名字是${this.name} ${person.name}`)
+    }
+}
+person.name = 'bob'
+person.tname = 'bob'
+person.prototype.age = 15
+let a = new person()
+a.name = 'a'
+ a.tname = 'a'  //无用
+a.say()
+名字是bob 年龄是15 my的名字是a person
+</code></pre>
+<p>解释：函数外部可以<strong>手动添加成员数据</strong>，且在 person.prototype.age上添加属性，<strong>实例也可以使用</strong></p>
+<p>如果直接person.tname = ‘bob’这样加，<strong>实例无法对属性变化</strong>，</p>
+<p>且注意名字person.name，这是自身属性，无法变，指向类名！！</p>
+<h2 id="4、关键字"><a href="#4、关键字" class="headerlink" title="4、关键字"></a>4、关键字</h2><p>extends  —继承</p>
+<p>super（）–  这个行为等同于调用构造函数</p>
+<pre><code>class father{
+    constructor(age){
+        this.age = age
+    }
+}
+class me extends father{
+    // constructor(age){
+    //     super(age)
+    // }
+    // super()   不能单独用
+    sayage(){
+        console.log(this.age)
+        // console.log(super)
+    }
+}
+let a = new me('aa')
+a.sayage()
+console.log(a instanceof me)     //true
+console.log(a instanceof father)   //true
+</code></pre>
+<p>当没有使用constructor函数时，系统自动调用父类方法</p>
+<p>当使用super时，也要注意传入参数（向father中）</p>
+<h1 id="二、代理"><a href="#二、代理" class="headerlink" title="二、代理"></a>二、代理</h1><h2 id="1、理解"><a href="#1、理解" class="headerlink" title="1、理解"></a>1、理解</h2><p>代理可以理解为对象的替身，可以对处理对象的方法进行处理：</p>
+<pre><code>const temple = {
+    name:'bob',
+    sex:'nan'
+}
+// 处理对象:
+const handler = {
+    // 这个捕获器名字也是固定的
+    get(trap,prop,rece){
+        console.log(trap)// {name: "bob", sex: "nan"}
+        console.log(prop)   //name,第二次sex
+        console.log(rece) //{name: "bob", sex: "nan"}
+    }
+}
+// 代理对象,调用Proxy函数时,注意
+// 1必须传入原对象,以及处理对象
+//2传入时,注意名字同上
+const proxy = new Proxy(temple,handler)
+proxy.name 
+proxy.sex 
+//同上都被get事件捕获,执行get事件
+proxy.age =23
+console.log(temple.age)  //23
+</code></pre>
+<h1 id="三、函数"><a href="#三、函数" class="headerlink" title="三、函数"></a>三、函数</h1><h2 id="1、特殊的理解"><a href="#1、特殊的理解" class="headerlink" title="1、特殊的理解"></a>1、特殊的理解</h2><p>由于函数的实际是对象，所以函数名实际表示的是<strong>对象的指针</strong>，可以通过函数名进行指针的传递</p>
+<pre><code>function fun(){
+    console.log('fun')
+}
+fun()
+const fun1 = fun  //使fun1指向函数对象
+fun = null
+fun1()   //fun
+fun()  //报错
+</code></pre>
+<p>fun = null 这可以切断函数名与函数的关联</p>
+<h3 id="注意-1"><a href="#注意-1" class="headerlink" title="注意"></a>注意</h3><p>箭头函数中的大括号表示<strong>函数体</strong>，如果省略表示隐式返回这行代码值</p>
+<pre><code>let doubel = x =&gt;x*3
+console.log(doubel(4))  //12
+</code></pre>
+<h2 id="2、实参与形参"><a href="#2、实参与形参" class="headerlink" title="2、实参与形参"></a>2、实参与形参</h2><p>直接上例子：</p>
+<pre><code>    function fun(num1,num2){
+        console.log('----------------')
+        console.log(num1+'   '+num2)
+        arguments[1] = 23   
+        console.log(num1+'   '+num2)
+        num2 = 334
+        console.log(num1+'   '+num2)
+        console.log(arguments[0]+'   '+arguments[1])
+        
+    }
+    fun(1)
+    fun(1,4)
+</code></pre>
+<p><a target="_blank" rel="noopener" href="https://imgtu.com/i/c7IjxS"><img src="https://z3.ax1x.com/2021/04/20/c7IjxS.png" alt="c7IjxS.png"></a></p>
+<h3 id="注意-2"><a href="#注意-2" class="headerlink" title="注意"></a>注意</h3><p>（1）当参数数目一样时，调用实参与形参一样的，且会保持同步的关系</p>
+<p>（2）但是当实参数目少时，改变argument时，<strong>不会影响形参nums2</strong>，当再次设置nums2值时，两者已经不同步</p>
+<p>（3）当然了，当实参数目要多时，那么等于实参数目的部分和情况一一样</p>
+<h2 id="3、重载？"><a href="#3、重载？" class="headerlink" title="3、重载？"></a>3、重载？</h2><pre><code>    function fun(a){
+        console.log(a)
+    }
+    function fun(a,b){
+        console.log('2222')
+        console.log(a+b+999)
+    }
+    fun(3,4)  //2222  1006
+    fun(2)  // 2222 NaN
+</code></pre>
+<p>由于函数名相当于指针，所以函数<strong>没有重载！！！</strong></p>
+<p>且注意函数会提升变量，且<strong>优先级高于var</strong></p>
+<h2 id="4、默认参数"><a href="#4、默认参数" class="headerlink" title="4、默认参数"></a>4、默认参数</h2><pre><code>  const fun = function(name = 'mike',name1 = '23',name2 = name){
+        console.log(name+'   '+name1+'   '+name2)  //mike 23 mike
+    }
+    fun()
+</code></pre>
+<p>当没有传入参数时，可以使用默认参数进行赋值，并且argumens<strong>不会对默认参数进行读取</strong></p>
+<p>默认参数中可以用<strong>函数或者之前声明的变量</strong>，</p>
+<h3 id="注意："><a href="#注意：" class="headerlink" title="注意："></a>注意：</h3><p>（1）使用函数做参数时，仅有fun被调用<strong>并且</strong>无参数时，该函数才会调用</p>
+<p>（2）只能是之前的，否则报错：</p>
+<pre><code>  const fun = function(name = 'mike',name1 = name2,name2 = name){
+        console.log(name+'   '+name1+'   '+name2)  //mike 23 mike
+   }
+   fun()  //name1 is undefined
+</code></pre>
+
+    
+
+    
+
+    
+
+  </div>
+  <div class="article-info article-info-index">
+    
+    
+    
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/js学习//" class="article-tag-list-link color5">js学习</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+
+    
+    <p class="article-more-link">
+      <a class="article-more-a" href="/2021/04/20/js%E5%AD%A6%E4%B9%A0/js%E5%AD%A6%E4%B9%A09/">展开全文 >></a>
+    </p>
+    
+
+    
+    <div class="clearfix"></div>
+  </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+    <article id="post-js学习/js学习8" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+  
+  
+    <h1 itemprop="name">
+	
+	  <a class="article-title" href="/2021/04/12/js%E5%AD%A6%E4%B9%A0/js%E5%AD%A6%E4%B9%A08/" target="_blank">js学习8</a>
+  
+    </h1>
+  
+
+
+  
+  
+<a href="/2021/04/12/js%E5%AD%A6%E4%B9%A0/js%E5%AD%A6%E4%B9%A08/" class="archive-article-date">
+        <time datetime="2021-04-12T14:10:37.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-04-12</time>
+</a>
+
+  
+  
+    
+
+  
+  </header>
+  
+  <div class="article-entry" itemprop="articleBody">
+    
+    
+    
+    <h1 id="一、创建对象方式"><a href="#一、创建对象方式" class="headerlink" title="一、创建对象方式"></a>一、创建对象方式</h1><h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>虽然Object构造函数以及对象字面量可以方便的创建对象，但是他们有着明显的不足：对于有着相同接口的对象需要引入重复的代码</p>
+<p>于是，有了以下几种：</p>
+<h2 id="1、工厂函数"><a href="#1、工厂函数" class="headerlink" title="1、工厂函数"></a>1、工厂函数</h2><pre><code>function creat(name,age){
+    let a = new Object
+    a.name = name
+    a.age = age
+    a.sayname = function(){
+        console.log(this.name)
+    }
+    return a
+}
+let person = creat('bob',23)
+</code></pre>
+<p>但是此时没有解决<strong>对象识别问题</strong>（就是新建的对象是什么类型）</p>
+<h2 id="2、构造函数模式"><a href="#2、构造函数模式" class="headerlink" title="2、构造函数模式"></a>2、构造函数模式</h2><pre><code>function creat(name,age){
+    this.name = name
+    this.age = age
+    this.sayname = function(){
+        console.log(this.name)
+    }
+}
+let person1 = new creat('bob',23)
+ let person2 = new creat('poa',21)
+person.sayname()    //bob
+</code></pre>
+<p>主要区别在于：</p>
+<p>（1）没有显示的建立对象</p>
+<p>（2）属性与方法直接赋值给this</p>
+<p>（3）没有return</p>
+<h3 id="注意"><a href="#注意" class="headerlink" title="注意"></a>注意</h3><p>构造函数的首字母名称是要大写的，非构造函数以小写字母开头</p>
+<p>这个构造函数在于就是new之后会新建立对象，并且进行赋值（this，prototype），然后如果没有return，就返回这个新建的对象。</p>
+<p>并且在上面的例子里面，person1与person2保存着<strong>不同的creat实例</strong></p>
+<pre><code>person1.constructor == creat   //true
+person1.constructor == creat   //true
+</code></pre>
+<div style="color: #008c8c; margin-top: 10px; font-size: 20px;">任何函数只要使用了new操作符调用都是构造函数，否则就是普通函数</div>
+
+<h3 id="注意-1"><a href="#注意-1" class="headerlink" title="注意"></a>注意</h3><p>此时上例如果没有使用new形成构造函数，那么this<strong>始终指向global对象</strong>，</p>
+<p>此时window对象上有了sayname方法，此时的调用需要指定作用域（apply与call）</p>
+<pre><code>function creat(name,age){
+    this.name = name
+    this.age = age
+    this.sayname = function(){
+        console.log(this.name)
+    }
+}
+let person1 = creat('bob',23)   //undefined 由于没有return
+window.sayname()  //bob
+let person2 = new Object()
+creat.call(person2,'jill',34)
+person2.sayname()    //jill
+</code></pre>
+<h3 id="构造函数的问题"><a href="#构造函数的问题" class="headerlink" title="构造函数的问题:"></a>构造函数的问题:</h3><p>主要问题在于它定义的方法在每一个实例上都会<strong>创建一个</strong>，虽然function的实例机制一样，</p>
+<p>但是有着<strong>不同的作用域链以及标识符解析</strong></p>
+<pre><code>person1.sayname == person2.sayname   //false
+</code></pre>
+<p>由于是同样的事，所以这是没必要的：</p>
+<h2 id="3、原型模式"><a href="#3、原型模式" class="headerlink" title="3、原型模式"></a>3、原型模式</h2><pre><code>function creat(){}   //每个函数都会创建一个prototype属性
+    creat.prototype.name = 'as'
+    creat.prototype.age = '23'
+    creat.prototype.sayname = function(){
+        console.log(this.name)
+    }
+let person1 = new creat()
+let person2 = new creat()
+console.log(person1.sayname==person2.sayname) //true
+</code></pre>
+<p>此时所有的属性以及方法都直接添加在Person的protype属性上</p>
+<h3 id="理解："><a href="#理解：" class="headerlink" title="理解："></a>理解：</h3><p>对象联系：</p>
+<p><a target="_blank" rel="noopener" href="https://imgtu.com/i/cDTHhT"><img src="https://z3.ax1x.com/2021/04/12/cDTHhT.png" alt="cDTHhT.png"></a></p>
+<pre><code>   console.log(person1.sayname==person2.sayname) //true
+console.log(person1.__proto__)
+console.log(creat.prototype)  
+ //与上面的是一样的，上面那个实际是访问[[prototype]]方式，（直接访问不行）
+ console.log(typeof(person1.__proto__))  //object
+
+ console.log(person1.constructor  === creat)   //true  指向构造函数
+</code></pre>
+<p>当然可以通过原型对象isPertotypeof()来判断是否在原型链上</p>
+<pre><code>creat.prototype.isPrototypeOf(person1)  //true
+</code></pre>
+<p>这个主要检查是否<strong>有链接指向Person.prototype</strong></p>
+<p>当然还可以使用instanceof方法：</p>
+<pre><code>person1 instanceof creat    //true
+</code></pre>
+<h1 id="二、继承"><a href="#二、继承" class="headerlink" title="二、继承"></a>二、继承</h1><h2 id="1、原型链"><a href="#1、原型链" class="headerlink" title="1、原型链"></a>1、原型链</h2><p>之前我们讨论了好多关于原型链的继承，但是也有好多问题，比如：无法给父类传递构造函数，无法做到私有，于是引入了盗用构造函数，</p>
+<h2 id="2、盗用构造函数"><a href="#2、盗用构造函数" class="headerlink" title="2、盗用构造函数"></a>2、盗用构造函数</h2><h3 id="介绍："><a href="#介绍：" class="headerlink" title="介绍："></a>介绍：</h3><p>子类中调用父类的构造函数，并且用call与apply在使其</p><div style="color: red; margin-top: 10px; font-size: 20px;">以子类为执行上下文来构造父类的函数:</div><p></p>
+<p>  function father(name) {<br>        this.name = name<br>        this.color = [‘red’, ‘blue’, ‘pink’]<br>        function sayname(){<br>            console.log(name)<br>        }<br>    }</p>
+<pre><code>function me() {
+    // 子类中以子类为执行上下文调用父类的方法
+    // 也可以：father.call(this) 
+    father.apply(this)
+}
+let son1 = new me()
+// son1.sayname()  //报错
+son1.color.push('black')
+console.log(...son1.color) //red blue pink black
+
+let son2 = new me
+console.log(...son2.color) //red blue pink 
+</code></pre>
+<p>注意：由于是在构造函数中调用方法：father.apply(this)，所以子类<strong>不能访问父类的构造方法！！</strong></p>
+<h2 id="扩展：apply与call"><a href="#扩展：apply与call" class="headerlink" title="扩展：apply与call"></a>扩展：apply与call</h2><h3 id="call-和-apply-之间的区别"><a href="#call-和-apply-之间的区别" class="headerlink" title="call() 和 apply() 之间的区别"></a>call() 和 apply() 之间的区别</h3><p>不同之处是：</p>
+<p>call() 方法分别接受参数。</p>
+<p>apply() 方法接受数组形式的参数。</p>
+<p>如果要使用数组而不是参数列表，则 apply() 方法非常方便。例：</p>
+<pre><code>var person = {
+    fullName: function (city, country) {
+        console.log(this.firstName + " " + this.lastName + "," + city + "," + country);
+    }
+}
+var person1 = {
+    firstName: "John",
+    lastName: "Doe"
+}
+person.fullName.call(person1, "Oslo", "Norway");//John Doe,Oslo,Norway
+//  person.fullName.apply(person1, ["Oslo", "Norway"]);//John 
+Doe,Oslo,Norway
+
+console.log(son1 instanceof me)   //true
+console.log(son1 instanceof father)   //false
+//不可识别
+</code></pre>
+<p>由于以上方法都具有问题，所以采用组合继承</p>
+<h2 id="3、组合继承"><a href="#3、组合继承" class="headerlink" title="3、组合继承"></a>3、组合继承</h2><p>即综合起来，<strong>通过原型链继承原型的属性与方法，通过盗用函数继承实例属性</strong></p>
+<p>   function father(name) {<br>        this.name = name<br>        this.color = [‘red’, ‘blue’]<br>    }<br>    father.prototype.sayname = function () {<br>        console.log(this.name)<br>    }</p>
+<pre><code>function me(name, age) {
+    father.call(this, name)
+    this.age = age
+}
+me.prototype = new father()
+me.prototype.sayage = function () {
+    console.log(this.age)
+}
+let son1 = new me('nike', 25)
+son1.color.push('black') 
+console.log(...son1.color)   // red blue 
+son1.sayage()  //25
+son1.sayname()  //nike
+
+let son2 = new me('mike',65)
+console.log(...son2.color)   //red blue
+son2.sayname()   //mike
+son2.sayage()    //65
+
+console.log(son1 instanceof me)   //true
+console.log(son1 instanceof father)   //true
+</code></pre>
+<p>组合继承也可以通过instanceof识别，目前最为广泛</p>
+
+    
+
+    
+
+    
+
+  </div>
+  <div class="article-info article-info-index">
+    
+    
+    
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/js学习//" class="article-tag-list-link color5">js学习</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+
+    
+    <p class="article-more-link">
+      <a class="article-more-a" href="/2021/04/12/js%E5%AD%A6%E4%B9%A0/js%E5%AD%A6%E4%B9%A08/">展开全文 >></a>
+    </p>
+    
+
+    
+    <div class="clearfix"></div>
+  </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+    <article id="post-js学习/js学习7" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+  
+  
+    <h1 itemprop="name">
+	
+	  <a class="article-title" href="/2021/04/12/js%E5%AD%A6%E4%B9%A0/js%E5%AD%A6%E4%B9%A07/" target="_blank">js学习7</a>
+  
+    </h1>
+  
+
+
+  
+  
+<a href="/2021/04/12/js%E5%AD%A6%E4%B9%A0/js%E5%AD%A6%E4%B9%A07/" class="archive-article-date">
+        <time datetime="2021-04-12T12:40:20.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-04-12</time>
+</a>
+
+  
+  
+    
+
+  
+  </header>
+  
+  <div class="article-entry" itemprop="articleBody">
+    
+    
+    
+    <h1 id="一、私有变量实现"><a href="#一、私有变量实现" class="headerlink" title="一、私有变量实现"></a>一、私有变量实现</h1><p>弱映射WeakMap实现了JS私有变量</p>
+<p>前提：私有变量存储在若映射中，以对象实例为键，私有对象的字典为值</p>
+<pre><code>const User = (() =&gt; {
+    const wm = new WeakMap()
+
+    class User {
+        constructor(id) {
+            // 定义symbol类型的数据作为对象属性标识符，里面的id相当于对它的描述
+            // 注意symbol不支持new，且每次都会新建一个symbol类型
+            // Symbol("foo") === Symbol("foo"); // false
+            this.idProperty = Symbol('id')
+            // 这里直接 = id也是对的，但是无法体现特点
+
+            this.setId(id)
+        }
+
+        // 这下面的get，set函数是真正进行操作的函数
+        setPrivate(prop, id) {
+            const priNumber = wm.get(this) || {}  // 这里相当于进行了两部操作，先get再赋值
+           
+            priNumber[prop] = id
+            console.log(priNumber)
+            // weakmap键必须为object
+            wm.set(this, priNumber)
+        }
+        getPrivate(prop) {
+            return wm.get(this)[prop]
+        }
+
+        // 由于进行set，get操作时，仅有一个参数，所以需要进行转换
+        //这里的set与get相当于转化的平台
+        setId(id) {
+            this.setPrivate(this.idProperty, id)
+        }
+        getId(id) {
+            return this.getPrivate(this.idProperty)
+        }
+    }
+    return User
+})()
+const user = new User(123)
+alert(user.getId())  //123
+user.setId('54654')
+console.log(user.getId())  //54654
+</code></pre>
+<h3 id="注意"><a href="#注意" class="headerlink" title="注意:"></a>注意:</h3><p>weakMap只接受对象作为键名（null除外），不接受其他类型的值作为键名</p>
+<p>且键名是弱引用，键值可以是任意的，键名所指向的对象可以被垃圾回收，此时键名是无效的</p>
+<p>而WeakSet成员<strong>都是对象</strong></p>
+<p>它是<strong>真正的弱弱地拿着</strong>,即值不属于正式的引用,可以被垃圾回收</p>
+<p>这两者都不可以被遍历!!</p>
+<h1 id="二、经典例题："><a href="#二、经典例题：" class="headerlink" title="二、经典例题："></a>二、经典例题：</h1><h2 id="1、-运算"><a href="#1、-运算" class="headerlink" title="1、+运算"></a>1、+运算</h2><pre><code>var a = {
+valueOf(){
+    console.log('sad')
+},
+toString(){
+    console.log('asas')
+}
+}
+const ar = i+a  //sad   ·
+//对象进行加法的时候，会自动调用函数valueOf，在这样此方法执行的是被重置之后的函数
+</code></pre>
+<h2 id="2、提升"><a href="#2、提升" class="headerlink" title="2、提升"></a>2、提升</h2><pre><code>var a =12   //开始是undefined
+function a(){
+    console.log('aa')
+}
+
+console.log(typeof(a))  //number
+</code></pre>
+<p>注意变量提升的顺序，<strong>函数优先级高</strong>，所以同一个变量，分别声明时，先定义的是函数</p>
+<p>但是注意这里有赋值，不会提升！所以三次变化：</p>
+<pre><code>undefined --function --number
+</code></pre>
+<p>理解：</p>
+<pre><code>function a(){
+    console.log('aa')
+}
+    var a 
+
+console.log(typeof(a))  //function
+a= 12
+console.log(typeof(a))  //number
+</code></pre>
+<h2 id="3、let提升"><a href="#3、let提升" class="headerlink" title="3、let提升??"></a>3、let提升??</h2><pre><code>let a =3
+a++
+console.log(a++) 
+ //报错,let不会提升的原因在于出现暂时性死区,所以没有提升,但是浏览器会注意到后面的let申明
+let a =23
+</code></pre>
+<p>不提升,只是因为暂时性死区,不是没看见!!!!</p>
+<h2 id="4、变量问题"><a href="#4、变量问题" class="headerlink" title="4、变量问题"></a>4、变量问题</h2><pre><code>var a = 3;
+(function(){
+a = 10
+var a = 5
+})()
+console.log(a)  //3
+</code></pre>
+<h3 id="注意："><a href="#注意：" class="headerlink" title="注意："></a>注意：</h3><p>（1）由于（）的原因，所以a = 3后面的;是必须的</p>
+<p>（2）由于作用域提升的关系所以后面的var a = 5中的var会提升到a = 10之前，所以这里的 a = 10不是全局声明</p>
+<p>如果去掉var a = 5，那么前面的a = 10的作用域与a =3一样，都是windows，所以最后的输出结果为10~</p>
+<h1 id="三、计算属性—实现属性的动态化"><a href="#三、计算属性—实现属性的动态化" class="headerlink" title="三、计算属性—实现属性的动态化"></a>三、计算属性—实现属性的动态化</h1><pre><code>let a = 'adsa'
+let b = 'name'
+let person = {
+    [a]:'1234',
+    [b]:'asds'
+}
+console.log(person.adsa)    //1234
+console.log(person)     {adsa: "1234", name: "asds"}
+</code></pre>
+<p>但是注意此时对对象的属性的操作时，应该使用变量的值</p>
+
+    
+
+    
+
+    
+
+  </div>
+  <div class="article-info article-info-index">
+    
+    
+    
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/js学习//" class="article-tag-list-link color5">js学习</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+
+    
+    <p class="article-more-link">
+      <a class="article-more-a" href="/2021/04/12/js%E5%AD%A6%E4%B9%A0/js%E5%AD%A6%E4%B9%A07/">展开全文 >></a>
+    </p>
+    
+
+    
+    <div class="clearfix"></div>
+  </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+    <article id="post-js学习/js学习6" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+  
+  
+    <h1 itemprop="name">
+	
+	  <a class="article-title" href="/2021/04/08/js%E5%AD%A6%E4%B9%A0/js%E5%AD%A6%E4%B9%A06/" target="_blank">js学习6</a>
+  
+    </h1>
+  
+
+
+  
+  
+<a href="/2021/04/08/js%E5%AD%A6%E4%B9%A0/js%E5%AD%A6%E4%B9%A06/" class="archive-article-date">
+        <time datetime="2021-04-08T13:37:41.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-04-08</time>
+</a>
+
+  
+  
+    
+
+  
+  </header>
+  
+  <div class="article-entry" itemprop="articleBody">
+    
+    
+    
+    <h1 id="一、定型数组"><a href="#一、定型数组" class="headerlink" title="一、定型数组"></a>一、定型数组</h1><h2 id="1、作用"><a href="#1、作用" class="headerlink" title="1、作用"></a>1、作用</h2><p>主要为了提升向原生库传输数据的速率，最早是在WebGL中使用的，最早是在WebGL中使用的，</p>
+<p>在WebGL早期中，由于JS默认以<strong>双精度浮点格式</strong>传输数值，这也是JS内存中的格式，但是此时出现了不匹配的问题</p>
+<p>所以WebGL需要重新分配数组并且进行迭代，转型。</p>
+<h2 id="2、ArrayBuffer（）"><a href="#2、ArrayBuffer（）" class="headerlink" title="2、ArrayBuffer（）"></a>2、ArrayBuffer（）</h2><p>他是定型数组及视图引用的基本单位，它创建之后不可变化大小</p>
+<pre><code>  const vat = new ArrayBuffer(3,4,5)
+  //这里就是相当于传入了一个3，表示大小，后面4，5没用
+</code></pre>
+<p>这里代表的是分配的字节数目：</p>
+<pre><code>console.log(vat.byteLength)  //3
+</code></pre>
+<p>可以与c语言进行相似理解，但注意它的区别特性在于</p>
+<p>（1）分配失败会抛出错误</p>
+<p>（2）回对二进制位进行初始化</p>
+<p>（3）会自动进行垃圾回收，不用手动释放</p>
+<h3 id="3、DataView"><a href="#3、DataView" class="headerlink" title="3、DataView"></a>3、DataView</h3><p>注意上面的ArrayBuffer（）对其进行读写必须要<strong>视图控制—DataView</strong></p>
+<pre><code> const vat = new ArrayBuffer(3,4,5)
+ const a = new DataView(vat)
+ a.setInt8(1,14)          //14
+ console.log(a.getInt8(1)) 
+ a.setInt16(0,2445)
+  console.log(a.getUint16(0))          //2445
+</code></pre>
+<p>注意DateView由于它不能对缓冲内容进行预设或者迭代。。。</p>
+<p>但是优点就是只要<strong>地址够</strong>，可以分配不同类型的</p>
+<p>所以只能通过每种类型自动封装的get，set方法来进行操作，类型有如下：</p>
+<pre><code>有符号的8位整数(int8)
+无符号的8位整数(uint8)
+有符号的16位整数(int16)
+无符号的16位整数(uint16)
+有符号的32位整数(int32)
+无符号的32位整数(uint32)
+32位浮点数(float32)
+64位浮点数(float64)
+</code></pre>
+<p>注意上面两种可以在之前的基础上进行分割：</p>
+<p>ArrayBuffer：</p>
+<pre><code>let buffer = new ArrayBuffer(10); // 分配了 10 个字节
+let buffer2 = buffer.slice(4, 6);
+console.log(buffer2.byteLength); // 2
+</code></pre>
+<p>DataView：</p>
+<pre><code>let buffer = new ArrayBuffer(10),
+view = new DataView(buffer, 5, 2); // 包含位置 5 与位置 6 的字节
+</code></pre>
+<h2 id="3、定型数组创建"><a href="#3、定型数组创建" class="headerlink" title="3、定型数组创建"></a>3、定型数组创建</h2><h3 id="（1）of（）-from（）"><a href="#（1）of（）-from（）" class="headerlink" title="（1）of（） from（）"></a>（1）of（） from（）</h3><p>of（）括号里面<strong>直接是元素</strong>，而form里面是数组</p>
+<p>例子：</p>
+<pre><code>     const res = Int16Array.of(2,3,4)
+    const res1 = Int32Array.from([2,3,4,5])
+     console.log(res)
+    console.log(res1)
+    console.log(res.byteLength)   //6
+    console.log(res1.byteLength)  //16
+</code></pre>
+<p>他们可以好多与数组一样，可以直接通过[],进行复制或取值</p>
+<p>注意of与form对于ArrayBuffer单位不行</p>
+<pre><code>     const b = Int16Array.from(vat)    //不行
+    b[1] = 32
+    console.log(b[1])
+</code></pre>
+<p>虽然不报错，但是也不行</p>
+<h3 id="（2）直接创建new方法"><a href="#（2）直接创建new方法" class="headerlink" title="（2）直接创建new方法"></a>（2）直接创建new方法</h3><pre><code>    const aa = new Int32Array(4)
+    aa[2] = 23
+    console.log(aa[2]) //23
+</code></pre>
+<p>这个new参数就和ArrayBuffer类似，只能是一个数，表示大小，其余多的会忽略</p>
+<p>但是除了一个数还可以传<strong>一个数组</strong>：</p>
+<pre><code> const ab = new Int32Array([3,234,523])
+</code></pre>
+<p>且定型数组有一个Symbol.iterator属性</p>
+<pre><code>  for(const i of aa){
+        document.write(i)
+        document.write('   ')
+    }
+alert(Math.max(...aa))   //523
+</code></pre>
+<p>所以它可以通过<strong>for of循环或者 扩展运算符操作</strong></p>
+<p>注意DataView不行！！！</p>
+<h1 id="Map映射"><a href="#Map映射" class="headerlink" title="Map映射"></a>Map映射</h1><p>对于‘键/值’数据的储存与管理时，JS作为一种新的集合类型对键/值问题进行了，细致解决</p>
+<h2 id="1、构造："><a href="#1、构造：" class="headerlink" title="1、构造："></a>1、构造：</h2><p>空映射：</p>
+<pre><code>const m = new Map()
+</code></pre>
+<p>嵌套数组进行映射：</p>
+<pre><code>const a =new Map([
+['key1':'name1'],
+['key2':'name2']
+])
+</code></pre>
+<p>遍历时：</p>
+<pre><code>for(const i of mapp.values()){
+    console.log(i)  //这样说整个键值对
+}
+for(const i of mapp.keys()){
+    console.log(i)  //这样说values值，
+}
+</code></pre>
+<p>由于for of是 遍历values,而for in是遍历keys，所以这时for in无法使用</p>
+<h4 id="注意values，与-keys值不可变化"><a href="#注意values，与-keys值不可变化" class="headerlink" title="注意values，与 keys值不可变化"></a>注意values，与 keys值不可变化</h4><h2 id="2、基础操作"><a href="#2、基础操作" class="headerlink" title="2、基础操作"></a>2、基础操作</h2><h3 id="1-set增加"><a href="#1-set增加" class="headerlink" title="(1)set增加"></a>(1)set增加</h3><pre><code>mapp.set('key23','name23')
+</code></pre>
+<p>当然了也可以直接进行链式操作，.set().set()</p>
+<h3 id="2-删除-delete-与clear（）"><a href="#2-删除-delete-与clear（）" class="headerlink" title="(2)删除 delete()与clear（）"></a>(2)删除 delete()与clear（）</h3><pre><code>mapp.delete('key1')  //仅删除一个
+mapp.clear()  全部删除
+</code></pre>
+<h3 id="3-查找get（）与has（）"><a href="#3-查找get（）与has（）" class="headerlink" title="(3)查找get（）与has（）"></a>(3)查找get（）与has（）</h3><pre><code>mapp.has('key1')   //这是判断有无
+mapp.get('keys')   //这是找values值
+</code></pre>
+<p>无法直接进行查询：</p>
+<pre><code>console.log(mapp['key1'])   //不行----undefined
+</code></pre>
+<p>注意映射中的内部引用<strong>无法修改！！！</strong>，且他们的keys键值也无法修改</p>
+<pre><code>mapp.set('key23','name23')
+for(let i of mapp.values()){
+     i = '2323'
+    console.log(i)  // 2323
+}
+</code></pre>
+<p>  console.log(mapp.get(‘key1’))  //name23</p>
+<p>且values也是同理</p>
+<p>但是他们如果是一个对象时，可以改变其对象属性：</p>
+<pre><code>key12 = {name:'sadasd'}
+const mapp = new Map([
+    [key12,name1],
+    
+])
+    key12.name= '1212'
+之后key12内部属性，就会变化
+</code></pre>
+<h2 id="3、迭代器"><a href="#3、迭代器" class="headerlink" title="3、迭代器"></a>3、迭代器</h2><p>映射实例会提供迭代器</p>
+<pre><code>let ma = new Map([
+    ['name','keys'],
+    ['name1','keyser'],
+    ['name2','keys2'],
+])  
+ //如果重名,按照最先出现的,且迭代就显示一个
+for(let i of ma){
+    console.log(i)
+}
+// 把映射变为数组
+console.log([...ma])
+</code></pre>
+<h3 id="注意map与object作为键值时区别为"><a href="#注意map与object作为键值时区别为" class="headerlink" title="注意map与object作为键值时区别为"></a>注意map与object作为键值时区别为</h3><p>（1）object只能以数值，字符串或符号作为键，而map可以用JS任意类型</p>
+<p>（2）之后就是属性值的改变问题</p>
+<p>（3）Map会维护键值对的插入顺序，可以根据插入顺序进行迭代</p>
+<p>在选择上，只有有大量查找时，object要由于map，其余无论是插入或是内存，删除，都是map优一点</p>
+
+    
+
+    
+
+    
+
+  </div>
+  <div class="article-info article-info-index">
+    
+    
+    
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/js学习//" class="article-tag-list-link color5">js学习</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+
+    
+    <p class="article-more-link">
+      <a class="article-more-a" href="/2021/04/08/js%E5%AD%A6%E4%B9%A0/js%E5%AD%A6%E4%B9%A06/">展开全文 >></a>
+    </p>
+    
+
+    
+    <div class="clearfix"></div>
+  </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+    <article id="post-js学习/js学习5" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+  
+  
+    <h1 itemprop="name">
+	
+	  <a class="article-title" href="/2021/04/07/js%E5%AD%A6%E4%B9%A0/js%E5%AD%A6%E4%B9%A05/" target="_blank">js学习5</a>
+  
+    </h1>
+  
+
+
+  
+  
+<a href="/2021/04/07/js%E5%AD%A6%E4%B9%A0/js%E5%AD%A6%E4%B9%A05/" class="archive-article-date">
+        <time datetime="2021-04-07T13:20:07.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-04-07</time>
+</a>
+
+  
+  
+    
+
+  
+  </header>
+  
+  <div class="article-entry" itemprop="articleBody">
+    
+    
+    
+    <h2 id="1、substring（）方法"><a href="#1、substring（）方法" class="headerlink" title="1、substring（）方法"></a>1、substring（）方法</h2><p>作用：用于截取指定位置的字符串并返回</p>
+<pre><code>  var s1 = 'some test'
+console.log(s1.substring(1,3))   //om
+</code></pre>
+<p>注意虽然s1是原始值，本身不是对象，本身应该不具有方法，但是在执行的过程中，实际执行了三步：</p>
+<pre><code>（1）创建一个String类型的实例
+（2）调用实例上的特定方法
+（3）销毁实例
+</code></pre>
+<p>这个叫做<strong>原始值包装类型</strong></p>
+<p>与引用类型最大的区别在于生命周期，它仅仅在访问那行代码时，存在，且不能为其添加方法和属性</p>
+<p>而引用类型则是在离开作用域时，销毁</p>
+<p>当然，可以通过Boolean，Number,String构造函数创建原始值包装对象</p>
+<h2 id="类似：slice（）与substr（）"><a href="#类似：slice（）与substr（）" class="headerlink" title="类似：slice（）与substr（）"></a>类似：slice（）与substr（）</h2><h3 id="slice"><a href="#slice" class="headerlink" title="slice"></a>slice</h3><pre><code>  var s1 = 'some test'
+console.log(s1.slice(1,3))   //om
+</code></pre>
+<p>与substring（）方法一样，两个参数分别代表第一个开始值和最后一个结束值</p>
+<h3 id="substr（）"><a href="#substr（）" class="headerlink" title="substr（）"></a>substr（）</h3><pre><code> var s1 = 'some test'
+console.log(s1.substr(1,3))   //ome
+</code></pre>
+<p>substr（）第一个参数表示的是开始位置，第二个参数表示的是字符<strong>数目</strong></p>
+<h3 id="处理负数不同："><a href="#处理负数不同：" class="headerlink" title="处理负数不同："></a>处理负数不同：</h3><p>slice将所有的负数值，看作<strong>字符串长度+负数值</strong></p>
+<p>substring则是将所有负数<strong>看作零</strong></p>
+<p>substr是将第一个负数看作<strong>字符串长度+负数值</strong>，第二个看作<strong>零</strong></p>
+<pre><code>var s1 = 'some test'       
+console.log(s1.slice(-2))    //st
+console.log(s1.substring(-3))  //some test
+console.log(s1.substr(2,-3))  // ''
+</code></pre>
+<h2 id="2、indexof-方法"><a href="#2、indexof-方法" class="headerlink" title="2、indexof()方法"></a>2、indexof()方法</h2><p>indexof()与lastindexof（）一个是返回第一个找到的位置，一个是返回最后一个找到的位置</p>
+<pre><code>let aaa = 'asdasdasdwfasdf'
+console.log(aaa.indexOf('a'))     //0
+console.log(aaa.lastIndexOf('a'))   //11
+</code></pre>
+<p>可以传入第二个参数a表示开始的位置，indexof（）从a往后找，lastindexof往前找</p>
+<pre><code> let aaa = 'asdasdasdwfasdf'
+console.log(aaa.indexOf('a',7))     //11
+console.log(aaa.lastIndexOf('a',7))   //6
+</code></pre>
+<p>所以可以利用递归获得所有位置</p>
+<h1 id="3、全局上下文"><a href="#3、全局上下文" class="headerlink" title="3、全局上下文"></a>3、全局上下文</h1><p>注意全局上下文具有两个内置对象，一个是global对象，但是它不能<strong>直接进行访问</strong>，ECMAscript没有！</p>
+<p>所以window对象可以作为global对象的<strong>代理</strong>，所有的全局变量与函数都是它的方法</p>
+<h2 id="global的UML方法"><a href="#global的UML方法" class="headerlink" title="global的UML方法"></a>global的UML方法</h2><h3 id="作用："><a href="#作用：" class="headerlink" title="作用："></a>作用：</h3><p>用于编码统一资源标识符，以便传给浏览器</p>
+<p>注意有效的URI不能包含某些字符，比如空格（替换为%20）</p>
+<h3 id="编码方法："><a href="#编码方法：" class="headerlink" title="编码方法："></a>编码方法：</h3><h3 id="encodeURI（）与-encodeURIComponent"><a href="#encodeURI（）与-encodeURIComponent" class="headerlink" title="encodeURI（）与 encodeURIComponent()"></a>encodeURI（）与 encodeURIComponent()</h3><p>encodeURI（）主要对整个URI进行编码，它<strong>不会编码属于URI组件的特殊字符</strong>，比如，冒号，井号</p>
+<p>encodeURIComponent()主要用于编码URI中的单独的组件，它会编码</p>
+<p>样例：</p>
+<pre><code>let url = 'http://localhost:8000/ user/login?mobile=” 22222222222 “&amp;password=”111“'
+console.log(encodeURI(url))
+console.log(encodeURIComponent(url))
+</code></pre>
+<p>答案：</p>
+<p><a target="_blank" rel="noopener" href="https://imgtu.com/i/c17Rtf"><img src="https://z3.ax1x.com/2021/04/06/c17Rtf.png" alt="c17Rtf.png"></a></p>
+<p>当然与他们相对应的是decodeURI（）与decodeURIComponent（）函数：</p>
+<pre><code> var uri = 'http://localhost:8000/%20user/login?mobile=%E2%80%9D%2022222222222%20%E2%80%9C&amp;password=%E2%80%9D111%E2%80%9C'
+console.log(decodeURI(uri))
+console.log(decodeURIComponent(uri))
+</code></pre>
+<p>注意decodeURIComponent可以<strong>全部进行解码</strong></p>
+<p>而decodeURI<strong>只能解码</strong>被decodeURI（）进行编码的</p>
+
+    
+
+    
+
+    
+
+  </div>
+  <div class="article-info article-info-index">
+    
+    
+    
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/js学习//" class="article-tag-list-link color5">js学习</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+
+    
+    <p class="article-more-link">
+      <a class="article-more-a" href="/2021/04/07/js%E5%AD%A6%E4%B9%A0/js%E5%AD%A6%E4%B9%A05/">展开全文 >></a>
+    </p>
+    
+
+    
+    <div class="clearfix"></div>
+  </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+    <article id="post-js学习/js学习4" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+  
+  
+    <h1 itemprop="name">
+	
+	  <a class="article-title" href="/2021/04/04/js%E5%AD%A6%E4%B9%A0/js%E5%AD%A6%E4%B9%A04/" target="_blank">js学习4</a>
+  
+    </h1>
+  
+
+
+  
+  
+<a href="/2021/04/04/js%E5%AD%A6%E4%B9%A0/js%E5%AD%A6%E4%B9%A04/" class="archive-article-date">
+        <time datetime="2021-04-04T14:21:32.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-04-04</time>
+</a>
+
+  
+  
+    
+
+  
+  </header>
+  
+  <div class="article-entry" itemprop="articleBody">
+    
+    
+    
+    <h2 id="1、sort函数"><a href="#1、sort函数" class="headerlink" title="1、sort函数"></a>1、sort函数</h2><h3 id="（1）无参的情况：按照字符编码的顺序进行排序"><a href="#（1）无参的情况：按照字符编码的顺序进行排序" class="headerlink" title="（1）无参的情况：按照字符编码的顺序进行排序"></a>（1）无参的情况：按照字符编码的顺序进行排序</h3><pre><code>    var arr = ['General','Tom','Bob','John','Army'];
+    var resArr = arr.sort();
+    console.log(resArr);//输出   ["Army", "Bob", "General", "John", "Tom"]
+    
+    var arr2 = [30,10,111,35,1899,50,45];
+    var resArr2 = arr2.sort();
+    console.log(resArr2);//输出   [10, 111, 1899, 30, 35, 45, 50]
+</code></pre>
+<h3 id="（2）有参升序"><a href="#（2）有参升序" class="headerlink" title="（2）有参升序"></a>（2）有参升序</h3><pre><code>    var arr3 = [30,10,111,35,1899,50,45];
+    arr3.sort(function(a,b){
+        return a - b;
+    })
+    console.log(arr3);//输出  [10, 30, 35, 45, 50, 111, 1899]
+</code></pre>
+<h3 id="（3）有参降序"><a href="#（3）有参降序" class="headerlink" title="（3）有参降序"></a>（3）有参降序</h3><pre><code>    var arr4 = [30,10,111,35,1899,50,45];
+    arr4.sort((a,b)=&gt;b - a)
+    console.log(arr4);//输出 [1899, 111, 50, 45, 35, 30, 10]
+</code></pre>
+<p>注意a在开始，要是a-b就是升序，（瞎理解为因为a是开始，所以就升。。。）</p>
+<h2 id="2、with语句"><a href="#2、with语句" class="headerlink" title="2、with语句"></a>2、with语句</h2><p>主要用于将代码作用域设为<strong>特定对象</strong></p>
+<pre><code>var a =12
+var c = 23
+var obj = {
+    a:'a',
+    b:'b',
+    c:'cc'
+}
+with(obj){
+    console.log(a)    //a
+    console.log(c)   //cc
+}
+</code></pre>
+<p>‘<br>with之后每个变量被认为是一个局部变量，没有该局部变量，就从obj中搜索该属性</p>
+<p>注意当函数里面使用with时，其作用域还在with中，并且在with中的定义的，只能用obj.访问</p>
+<p>且是undefined，直接访问会报错，且obj中也没有新定义的东西</p>
+<pre><code>function fun(){
+    var a = '12233'
+    with(obj){
+        console.log(a)  
+        console.log(c)
+
+        let obj1 = '23'
+        var obj2 = '34'
+        const obj3 = '455'
+    }
+    console.log(obj.obj1)   //undefined
+    console.log(obj.obj2) //undefined
+    console.log(obj.obj3) //undefined
+}
+fun()
+// console.log(obj2)    //报错
+console.log(obj.obj1) //undefined
+console.log(obj.obj2) //undefined
+console.log(obj.obj3) //undefined
+console.log(obj)   //{ a: 'a', b: 'b', c: 'cc' }
+</code></pre>
+<h2 id="3、typeof与instanceof应用"><a href="#3、typeof与instanceof应用" class="headerlink" title="3、typeof与instanceof应用"></a>3、typeof与instanceof应用</h2><h3 id="1-typeof（）"><a href="#1-typeof（）" class="headerlink" title="(1)typeof（）"></a>(1)typeof（）</h3><p>确定值的<strong>原始类型</strong></p>
+<p>. typeof的返回值</p>
+<pre><code>typeof运算符的返回类型为字符串，值包括如下几种：
+
+    1. 'undefined'              --未定义的变量或值
+
+    2. 'boolean'                 --布尔类型的变量或值
+
+    3. 'string'                     --字符串类型的变量或值
+
+    4. 'number'                  --数字类型的变量或值
+
+    5. 'object'                    --对象类型的变量或值，或者null(这个是js历史遗留问题，将null作为object类型处理)
+
+    6. 'function'                 --函数类型的变量或值
+</code></pre>
+<p>样例：</p>
+<pre><code>console.log(typeof(true));  //'boolean'
+console.log(typeof '123');  //'string'
+</code></pre>
+<h3 id="1-instanceof（）"><a href="#1-instanceof（）" class="headerlink" title="(1)instanceof（）"></a>(1)instanceof（）</h3><p>判断值的<strong>引用类型</strong>，也就是检测构造函数的 prototype 属性是否出现在某个实例对象的原型链上。</p>
+<pre><code>var simpleStr = "This is a simple string"; 
+var myString  = new String();
+var newStr    = new String("String created with constructor");
+var myDate    = new Date();
+var myObj     = {};
+    var myNonObj  = Object.create(null);
+
+simpleStr instanceof String; // 返回 false, simpleStr并不是对象
+myString  instanceof String; // 返回 true
+newStr    instanceof String; // 返回 true
+myString  instanceof Object; // 返回 true
+ 
+myObj instanceof Object;    // 返回 true, 尽管原型没有定义
+({})  instanceof Object;    // 返回 true, 同上
+myNonObj instanceof Object; // 返回 false, 一种创建非 Object 实例的对象的方法
+     
+myString instanceof Date; // 返回 false
+ 
+myDate instanceof Date;     // 返回 true
+myDate instanceof Object;   // 返回 true
+myDate instanceof String;   // 返回 false
+</code></pre>
+<p>它的手动实现：</p>
+<pre><code>function myInstanceof (left, right) {
+// 基本数据类型直接返回false
+if (typeof left !== 'object' || left === null) return false
+// getProtypeOf是Object对象自带的一个方法，能够拿到参数的原型对象
+let proto = Object.getPrototypeOf(left)
+while (true) {
+    // 查找到尽头，还没找到
+    if (proto == null) return false
+    // 找到相同的原型对象
+    if (proto == right.prototype) return true
+    proto = Object.getPrototypeOf(proto)
+}
+}
+</code></pre>
+
+    
+
+    
+
+    
+
+  </div>
+  <div class="article-info article-info-index">
+    
+    
+    
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/js学习//" class="article-tag-list-link color5">js学习</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+
+    
+    <p class="article-more-link">
+      <a class="article-more-a" href="/2021/04/04/js%E5%AD%A6%E4%B9%A0/js%E5%AD%A6%E4%B9%A04/">展开全文 >></a>
+    </p>
+    
+
+    
+    <div class="clearfix"></div>
+  </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
     <article id="post-js经典问题/扩展运算符与深拷贝" class="article article-type-post  article-index" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -521,1749 +2303,9 @@ function deepClone2(obj) {
 
 
   
-    <article id="post-js经典问题/迭代器与生成器" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-  
-  
-    <h1 itemprop="name">
-	
-	  <a class="article-title" href="/2021/04/02/js%E7%BB%8F%E5%85%B8%E9%97%AE%E9%A2%98/%E8%BF%AD%E4%BB%A3%E5%99%A8%E4%B8%8E%E7%94%9F%E6%88%90%E5%99%A8/" target="_blank">迭代器与生成器</a>
-  
-    </h1>
-  
-
-
-  
-  
-<a href="/2021/04/02/js%E7%BB%8F%E5%85%B8%E9%97%AE%E9%A2%98/%E8%BF%AD%E4%BB%A3%E5%99%A8%E4%B8%8E%E7%94%9F%E6%88%90%E5%99%A8/" class="archive-article-date">
-        <time datetime="2021-04-02T05:10:46.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-04-02</time>
-</a>
-
-  
-  
-    
-
-  
-  </header>
-  
-  <div class="article-entry" itemprop="articleBody">
-    
-    
-    
-    <h1 id="迭代器与生成器"><a href="#迭代器与生成器" class="headerlink" title="迭代器与生成器"></a>迭代器与生成器</h1><p>首先为了处理集合中的每一项，JS可以通过简单的for foreach,还有如下方法:</p>
-<h3 id="map-："><a href="#map-：" class="headerlink" title="map()："></a>map()：</h3><pre><code>var numbers = [4, 9, 16, 25];
-
-function myFunction() {
-    x = document.getElementById("demo")
-    x.innerHTML = numbers.map(Math.sqrt);   /2，3，4，5
-}
-</code></pre>
-<p>map() 方法返回一个新数组，数组中的元素为原始数组元素调用函数处理后的值。</p>
-<p>map() 方法按照原始数组元素顺序依次处理元素。</p>
-<h3 id="filter"><a href="#filter" class="headerlink" title="filter()"></a>filter()</h3><pre><code>var ages = [32, 33, 16, 40];
-
-function checkAdult(age) {
-    return age &gt;= 18;
-}
-
-function myFunction() {
-    document.getElementById("demo").innerHTML = ages.filter(checkAdult);
-}
-</code></pre>
-<p>这是返回<strong>原数组中达到要求的数组</strong></p>
-<h3 id="array-comprehensions-数组推导式"><a href="#array-comprehensions-数组推导式" class="headerlink" title="array comprehensions(数组推导式)"></a>array comprehensions(数组推导式)</h3><p>而且在JavaScript 1.7中，迭代器和生成器在JavaScript核心语法中带来了新的迭代机制，而且还提供了定制 for…in 和 for each 循环行为的机制。</p>
-<h1 id="1、迭代器"><a href="#1、迭代器" class="headerlink" title="1、迭代器"></a>1、迭代器</h1><h2 id="（1）介绍"><a href="#（1）介绍" class="headerlink" title="（1）介绍"></a>（1）介绍</h2><p>是一个每次访问集合序列中一个<strong>元素的对象</strong>，并跟踪该序列中迭代的当前位置。</p>
-<p>在JavaScript中迭代器是一个对象，这个对象提供了一个 next() 方法（必须实现），next() 方法返回序列中的下一个元素，即为IteratorReault对象。此对象具有value与done两个属性，一个表示值，一个表示是否结束：</p>
-<pre><code>ab = [23,4,5]
-console.log(ab[Symbol.iterator]().next())  //{value: 23, done:false}
-</code></pre>
-<p>当序列中所有元素都遍历完成时，该方法抛出 StopIteration 异常，done也变为true。</p>
-<p>[Symbol.iterator]表示可迭代属性，可以作为一个工厂函数使用</p>
-<p>迭代器对象一旦被建立，就可以通过显式的重复调用next()，或者使用JavaScript的 for…in 和 for each 循环隐式调用。</p>
-<p>但是注意迭代器是一次性的!!!</p>
-<pre><code>ab = [23,4,5]
- let s = ab[Symbol.iterator]()
-for(const i of s){
-    console.log(i)
-}
-console.log("-----")
-//这个s已经迭代完了，这就反映了迭代器的一次性遍历的特点
-for(const i of s){
-    console.log(i)
-}
-</code></pre>
-<h2 id="（2）创建"><a href="#（2）创建" class="headerlink" title="（2）创建"></a>（2）创建</h2><p>简单的对对象和数组进行迭代的迭代器可以使用 [Symbol.iterator]工厂函数：</p>
-<pre><code>let lang = [23,34]
-//var lang = { name: 'JavaScript', birthYear: 1995 };
-//对象是错误的
-var it = lang[Symbol.iterator];
-</code></pre>
-<p>之后可以通过next进行操作</p>
-<pre><code>var pair = it.next(); 
-</code></pre>
-<p>如果进想输出key值，则可以传入第二个参数</p>
-<pre><code> var langs = ['JavaScript', 'Python', 'Haskell'];
-var it = langs[Symbol.iterator]();
-for (const pair of it)
-{
-    console.log(pair); //每次迭代输出 [index, language]
-}
-</code></pre>
-<p>此时把true当作<strong>数组索引</strong></p>
-<p>##（3） 声明自定义迭代器</p>
-<p>实现Iterable接口的类型有:</p>
-<pre><code>字符串
-数组
-映射
-集合
-arguments对象
-NodeList等DOM集合类型
-</code></pre>
-<h3 id="注意-没有Object"><a href="#注意-没有Object" class="headerlink" title="注意:没有Object"></a>注意:没有Object</h3><p>##（4）声明自定义迭代器</p>
-<p>一些代表元素集合的对象应该用一种指定的方式来迭代。例如：</p>
-<p>1.迭代一个表示范围(Range)的对象应该一个接一个的返回这个范围包含的数字</p>
-<p>2.一个树的叶子节点可以使用深度优先或者广度优先访问到</p>
-<p>3.迭代一个代表数据库查询结果的对象应该一行一行的返回，即使整个结果集尚未全部加载到一个单一数组</p>
-<p>4.作用在一个无限数学序列(像斐波那契序列)上的迭代器应该在不创建无限长度数据结构的前提下一个接一个的返回结果</p>
-<p>JavaScript 允许你写<strong>自定义迭代逻辑</strong>的代码，并把它作用在一个对象上</p>
-<h3 id="迭代器缺点："><a href="#迭代器缺点：" class="headerlink" title="迭代器缺点："></a>迭代器缺点：</h3><p>虽然自定义的迭代器是一种很有用的工具，但是创建它们的时候要仔细规划，因为需要显式的维护它们的内部状态。于是我们引入了：</p>
-<h1 id="2、生成器（创建迭代器的更好的方式）"><a href="#2、生成器（创建迭代器的更好的方式）" class="headerlink" title="2、生成器（创建迭代器的更好的方式）"></a>2、生成器（创建迭代器的更好的方式）</h1><p>生成器提供了很强大的功能：它允许你定义一个包含自有迭代算法的函数， 同时它可以<strong>自动维护</strong>自己的状态。</p>
-<p>(因为它的默认的迭代器是自引用的)</p>
-<p>生成器形式是一个函数,函数名称前面加”星号”即可,<strong>只要是自定义函数的地方,就可以定义生成器</strong>,除非是箭头函数</p>
-<pre><code>let try = function *(){}
-</code></pre>
-<h2 id="1-执行过程"><a href="#1-执行过程" class="headerlink" title="(1) 执行过程"></a>(1) 执行过程</h2><p>调用生成器函数会产生生成器对象,其一开始为暂停状态,它也有Iterator接口和next方法,这个next方法是其<strong>开始的标志</strong>.</p>
-<pre><code>function* gen(){
-    console.log('lala')
-    return '1'
-}
-let as = gen()
-as.next()
-生成器函数初次只有在用next之后才会开始
-</code></pre>
-<p>且next()返回值类似于迭代器,也是value与done,value表示的是函数的返回值</p>
-<h3 id="yeild—-停止生成器直到下次next"><a href="#yeild—-停止生成器直到下次next" class="headerlink" title="yeild—-停止生成器直到下次next"></a>yeild—-停止生成器直到下次next</h3><p>每次调用 generator-iterator 的 next() 方法，函数体就会执行到下一个 yield 表达式，然后返回它的结果。</p>
-<div style="color: red; font-size: 16px;">使用yield关键字退出的生成器会在done:flase的状态,而return出去的则是 done:true</div>
-
-<p>当函数结束或者碰到 return 语句，一个 StopIteration 异常会被抛出。 例子：</p>
-<p>function *simpleGenerator(){<br>      yield “first”;<br>      yield “second”;<br>      yield “third”;<br>      for (var i = 0; i &lt; 3; i++)<br>        yield i;<br>    }</p>
-<pre><code>var g = simpleGenerator();
-console.log(g.next()); //输出 "first",done:false
-console.log(g.next()); //输出 "second"done:false
-console.log(g.next()); //输出 "third"done:false
-console.log(g.next()); //输出 0,done:false
-console.log(g.next()); //输出 1,done:false
-console.log(g.next()); //输出 2,done:false
-console.log(g.next()); //抛出 StopIteration 异常
-</code></pre>
-<h3 id="注意-1-yield必须直接位于生成器定义函数中-不可嵌套"><a href="#注意-1-yield必须直接位于生成器定义函数中-不可嵌套" class="headerlink" title="注意:1.yield必须直接位于生成器定义函数中,不可嵌套"></a>注意:1.yield必须直接位于生成器定义函数中,不可嵌套</h3><pre><code>function* fun(){    
-function a(){
-    yield   ---无效    
-}    
-    }     
-</code></pre>
-<h3 id="2-yield可以用于输入输出"><a href="#2-yield可以用于输入输出" class="headerlink" title="2.yield可以用于输入输出"></a>2.yield可以用于输入输出</h3><p>yeild会接收给next方法的第一个值,但是<strong>第一次调用next()时,里面的值,不会被调用,相当于开始执行</strong></p>
-<pre><code> function* gens(lala){
-    console.log(lala)
-//如果第一个就输出yield则啥都没有
-    console.log(yield)
-    console.log(yield)
-}
-let gun = gens('foo')
-gun.next('123')  //foo
-gun.next('555')    //555
-gun.next('52353255')   //52353255
-</code></pre>
-<p>作为输入与输出的yield</p>
-<pre><code> function * fun(){
-    return yield 'foo'
-    // 这个foo相当于开始第一个参数，由于第一个next无效
-}
-let aaaa = fun()
-console.log(aaaa.next('asdsad')) //第一个参数没有用
-console.log(aaaa.next('asd'))
-</code></pre>
-<h3 id="（3）高级特性-yield参数的加强—星号"><a href="#（3）高级特性-yield参数的加强—星号" class="headerlink" title="（3）高级特性 yield参数的加强—星号"></a>（3）高级特性 yield参数的加强—星号</h3><p>当使用星号加强时,使其可以迭代一个可迭代对象,从而产出一个值</p>
-<pre><code>  function* ntimes(n){
-    if(n&gt;0){
-        yield* ntimes(n-1); //实例话对象
-        yield n-1;    //减少值,也先当于打印返回
-    }
-}
-for(const i of ntimes(4)){
-        console.log(i)  //0 1 2 3
-    }
-</code></pre>
-<h3 id="4-关闭"><a href="#4-关闭" class="headerlink" title="4.关闭"></a>4.关闭</h3><p>生成器的关闭方式有return(),throw(),next()!!</p>
-<h4 id="对于return-方法"><a href="#对于return-方法" class="headerlink" title="对于return()方法"></a>对于return()方法</h4><p>对于它提供的值,就是<strong>终止对象的值</strong>,且之后再执行next(),只会改变done状态,但是value值<strong>不会传播</strong></p>
-<pre><code>function* fun(){
-    for(const x of [2,3,4,5]){
-        yield x
-    }
-}
-const x = fun()
-console.log(x.next())   //{value: 2, done: false}
-console.log(x.return(4))   //{value: 4, done: true}
-console.log(x.next())      //{value: undefined, done: true}
-</code></pre>
-<h4 id="对于throw-方法"><a href="#对于throw-方法" class="headerlink" title="对于throw()方法"></a>对于throw()方法</h4><p>它是往其中放置错误,如果错误被解决则可进行,但是会跳过本次yield值,否则则关闭</p>
-<pre><code>function* gen(){
-    for(const i of [2,3,4,5,45]){
-        try{
-            yield i;
-        }catch(e){
-            console.log(e)
-        }
-    }
-}
-const g = gen()
-    console.log(g.next())  //2
-     g.throw('fooo')   //catch得到打印为fooo
-    console.log(g.next())   //4
-</code></pre>
-<p>yield</p>
-<h2 id="扩展：基础Iterator的原生实现"><a href="#扩展：基础Iterator的原生实现" class="headerlink" title="扩展：基础Iterator的原生实现"></a>扩展：基础Iterator的原生实现</h2><pre><code>function myIterator(arr) {
-let index = 0;
-return {
-    next() {
-        return index &lt; arr.length ? {
-            value: arr[index++],
-            done: false//可以省略
-        } : {
-            value: undefined,//可以省略
-            done: true
-        }
-    }
-}
-}
-const it = myIterator([1, 2])
-console.log(it.next());// {value: 1, done: false}
-console.log(it.next());// {value: 2, done: false}
-console.log(it.next());// {value: undefined, done: true}
-</code></pre>
-
-    
-
-    
-
-    
-
-  </div>
-  <div class="article-info article-info-index">
-    
-    
-    
-	<div class="article-category tagcloud">
-		<i class="icon-book icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/js经典问题//" class="article-tag-list-link color2">js经典问题</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-
-    
-    <p class="article-more-link">
-      <a class="article-more-a" href="/2021/04/02/js%E7%BB%8F%E5%85%B8%E9%97%AE%E9%A2%98/%E8%BF%AD%E4%BB%A3%E5%99%A8%E4%B8%8E%E7%94%9F%E6%88%90%E5%99%A8/">展开全文 >></a>
-    </p>
-    
-
-    
-    <div class="clearfix"></div>
-  </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
-    <article id="post-js经典问题/this问题" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-  
-  
-    <h1 itemprop="name">
-	
-	  <a class="article-title" href="/2021/04/01/js%E7%BB%8F%E5%85%B8%E9%97%AE%E9%A2%98/this%E9%97%AE%E9%A2%98/" target="_blank">this问题</a>
-  
-    </h1>
-  
-
-
-  
-  
-<a href="/2021/04/01/js%E7%BB%8F%E5%85%B8%E9%97%AE%E9%A2%98/this%E9%97%AE%E9%A2%98/" class="archive-article-date">
-        <time datetime="2021-04-01T12:37:26.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-04-01</time>
-</a>
-
-  
-  
-    
-
-  
-  </header>
-  
-  <div class="article-entry" itemprop="articleBody">
-    
-    
-    
-    <h1 id="this指向问题"><a href="#this指向问题" class="headerlink" title="this指向问题"></a>this指向问题</h1><p>###首先明白：</p>
-<p><strong>1：this永远指向一个对象；</strong></p>
-<p><strong>2：this的指向完全取决于函数调用的位置；</strong></p>
-<p>但是，由于js语言之中，一切皆为对象，所以看函数在那个运行对象下进行，但是js支持运行环境动态切换，所以this的指向是动态的</p>
-<h2 id="1、分析"><a href="#1、分析" class="headerlink" title="1、分析"></a>1、分析</h2><p>首先，在JS中，数组、函数、对象都是引用类型，在参数传递时也就是<strong>引用传递</strong>；</p>
-<p>样例：</p>
-<pre><code>function foo() {
-    console.log(this.a);
-}
-var obj2 = {
-    a: 2,
-    fn: foo
-};
-var obj1 = {
-    a: 1,
-    o1: obj2
-};
-obj1.o1.fn(); // 2
-</code></pre>
-<p>obj1对象的o1属性值是obj2对象的地址，而obj2对象的fn属性的值是函数foo的地址；</p>
-<p>，我们对this使用最频繁的几种情况做一个总结，最常见的基本就是以下5种：</p>
-<p>对象中的方法，事件绑定 ，构造函数 ，定时器，函数对象的call()、apply() 方法；</p>
-<h2 id="2、事件绑定"><a href="#2、事件绑定" class="headerlink" title="2、事件绑定"></a>2、事件绑定</h2><p>事件绑定共有三种方式：行内绑定、动态绑定、事件监听；</p>
-<p>###（1）行内绑定</p>
-<h4 id="解释："><a href="#解释：" class="headerlink" title="解释："></a>解释：</h4><p>行内绑定事件的语法是在html节点内，以节点属性的方式绑定，属性名是事件名称前面加’on’，</p>
-<p>属性的值则是一段可执行的 JS 代码段；而属性值最常见的就是一个函数调用；</p>
-<h4 id="情况："><a href="#情况：" class="headerlink" title="情况："></a>情况：</h4><pre><code>&lt;input type="button" value="按钮" onclick="clickFun()"&gt;
-&lt;script&gt;
-function clickFun(){
-    this // 此函数的运行环境在全局window对象下，因此this指向window;
-}
-&lt;/script&gt;
-&lt;2&gt;​
-&lt;input type="button" value="按钮" onclick="this"&gt;
-&lt;!-- 运行环境在节点对象中，因此this指向本节点对象 --&gt;
-</code></pre>
-<p>由于事件触发时，属性值会作为js代码执行，当，</p>
-<p>情况一：</p>
-<p>由于当前运行环境无次函数，所以浏览器会跳出当前环境，直接在整个环境找clickFun函数，所以此时指向<strong>windows对象</strong></p>
-<p>情况二：</p>
-<p>没有任何函数，所以直接在当前节点调用</p>
-<p>###（2）动态绑定与事件监听</p>
-<p>因为动态绑定的事件本就是为节点对象的属性(事件名称前面加’on’)重新赋值为一个匿名函数，因此函数在执行时就是在节点对象的环境下，this自然就指向了本节点对象；</p>
-<p>例：</p>
-<pre><code>&lt;input type="button" value="按钮" id="btn"&gt;
-&lt;script&gt;
-var btn = document.getElementById('btn');
-btn.onclick = function(){
-    this ;  // this指向本节点对象，即为input
-}
-&lt;/script&gt;
-</code></pre>
-<h3 id="事件监听中this指向的原理与动态绑定基本一致，所以不再阐述；"><a href="#事件监听中this指向的原理与动态绑定基本一致，所以不再阐述；" class="headerlink" title="事件监听中this指向的原理与动态绑定基本一致，所以不再阐述；"></a>事件监听中this指向的原理与动态绑定基本一致，所以不再阐述；</h3><h2 id="3、构造函数中的this"><a href="#3、构造函数中的this" class="headerlink" title="3、构造函数中的this"></a>3、构造函数中的this</h2><p>例子：</p>
-<pre><code>function Pro(){
-    this.x = '1';
-    this.y = function(){};
-}
-var p = new Pro();
-</code></pre>
-<p><a target="_blank" rel="noopener" href="https://imgtu.com/i/cVRgRH"><img src="https://z3.ax1x.com/2021/04/01/cVRgRH.png" alt="cVRgRH.png"></a></p>
-<p>第三步强制this指向新建的对象</p>
-<h2 id="4、windows定时器下的this"><a href="#4、windows定时器下的this" class="headerlink" title="4、windows定时器下的this"></a>4、windows定时器下的this</h2><p>例子：</p>
-<pre><code>var obj = {
-    fun:function(){
-        this ;
-    }
-}
-​
-setInterval(obj.fun,1000);      // this指向window对象
-setInterval('obj.fun()',1000);  // this指向obj对象
-</code></pre>
-<p>在上面的代码中，setInterval(obj.fun,1000) 的第一个参数是obj对象的fun </p>
-<p>因为 JS 中函数可以被当做<strong>值</strong>来做引用传递，实际就是将这个函数的地址当做参数传递给了 setInterval 方法，</p>
-<p>换句话说就是 setInterval 的第一参数接受了一个函数，那么此时1000毫秒后，函数的运行就已经是在window对象下了，也就是函数的调用者已经变成了window对象，所以其中的this则指向的全局window对象；</p>
-<h4 id="但是"><a href="#但是" class="headerlink" title="但是"></a>但是</h4><p>setInterval(‘obj.fun()’,1000) 中的第一个参数，实际则是传入的一段可执行的** JS 代码**；</p>
-<p>1000毫秒后当 JS 引擎来执行这段代码时，则是通过 obj 对象来找到 fun 函数并调用执行，那么函数的运行环境依然在 对象 obj 内，所以函数内部的this也就指向了 obj 对象；</p>
-  <div style="color: red; font-size: 20px;">这里需要注意的是，函数后面要是没有加（），表示传值，也就是传址，而加上才等于加一段js代码</div>
-
-<h2 id="5、函数对象的call-、apply-方法"><a href="#5、函数对象的call-、apply-方法" class="headerlink" title="5、函数对象的call()、apply() 方法"></a>5、函数对象的call()、apply() 方法</h2><p>这两个方法接收对象作为参数，来<strong>指定</strong>this指向，但是却改不了箭头函数中的this</p>
-<h3 id="（1）call"><a href="#（1）call" class="headerlink" title="（1）call"></a>（1）call</h3><p>使用：</p>
-<pre><code>call(obj,arg1,arg2...argN);
-</code></pre>
-<p>参数说明:</p>
-<p>obj:函数内this要指向的对象,</p>
-<p>arg1,arg2…argN :参数列表，参数与参数之间使用一个逗号隔开</p>
-<pre><code>var lisi = {names:'lisi'};
-var zs = {names:'zhangsan'};
-function f(age){
-console.log(this.names);
-console.log(age);
-
-}
-f(23);//undefined
-    ​
-//将f函数中的this指向固定到对象zs上；
-f.call(zs,32);//zhangsan
-</code></pre>
-<h3 id="（2）apply"><a href="#（2）apply" class="headerlink" title="（2）apply"></a>（2）apply</h3><p>函数名称.apply(obj,[arg1,arg2…,argN])</p>
-<p>参数说明:</p>
-<p>obj :this要指向的对象</p>
-<p>[arg1,arg2…argN] : 参数列表，要求格式为数组</p>
-<pre><code>var lisi = {name:'lisi'}; 
-var zs = {name:'zhangsan'}; 
-function f(age,sex){
-console.log(this.name+age+sex); 
-}
-//将f函数中的this指向固定到对象zs上；
-f.apply(zs,[23,'nan']);
-</code></pre>
-<p><strong>注意：call和apply的作用一致，区别仅仅在函数实参参数传递的方式上；</strong></p>
-<p>这个两个方法的最大作用基本就是用来强制指定函数调用时this的指向；</p>
-<h2 id="6、其余的"><a href="#6、其余的" class="headerlink" title="6、其余的"></a>6、其余的</h2><p>当一个函数非一个对象属性时，那么它就是被当作函数来调用的，此时this为全局对象</p>
-<p><a target="_blank" rel="noopener" href="https://imgtu.com/i/cV48X9"><img src="https://z3.ax1x.com/2021/04/01/cV48X9.png" alt="cV48X9.png"></a></p>
-<h1 id="例题实战："><a href="#例题实战：" class="headerlink" title="例题实战："></a>例题实战：</h1><h3 id="1题"><a href="#1题" class="headerlink" title="1题"></a>1题</h3><p><a target="_blank" rel="noopener" href="https://imgtu.com/i/cVbzin"><img src="https://z3.ax1x.com/2021/04/01/cVbzin.png" alt="cVbzin.png"></a></p>
-<p>在执行person1.sayName()时，时方法调用模式，this代表person1这个对象</p>
-<p>在执行person2.sayName()时，时方法调用，但是sayName，<strong>并没有执行</strong>，而是将sayName()这个函数赋值给fun这个变量，fun是函数调用模式，this指向window，故输出全局的name</p>
-<h3 id="2题："><a href="#2题：" class="headerlink" title="2题："></a>2题：</h3><p><a target="_blank" rel="noopener" href="https://imgtu.com/i/cVq3ee"><img src="https://z3.ax1x.com/2021/04/01/cVq3ee.png" alt="cVq3ee.png"></a></p>
-<p>执行console.log(b.n)时，b对象有自己的属性n值</p>
-<p>执行console.log(c.n)时，c对象没有自己的属性n值，即没有this，会向上查找，找的A对象中的属性n值</p>
-<p>既可以理解为先从构造也就是c的属性（新对象）找值，没有再从原来找</p>
-<h3 id="3题："><a href="#3题：" class="headerlink" title="3题："></a>3题：</h3><pre><code> var color = 'a'
-var test = {
-    color: 'b',
-    getcolor: function () {
-        var color = 'c'
-         console.log(this.color)   
-        console.log(color)    c
-    }
-}
-// 这里相当于把函数当作参数，传址，要是getcolor（）代表传值
-var get = test.getcolor   
-get()                //a
-test.getcolor(）       //b
-</code></pre>
-<p>vargetColor=test.getColor相当于把方法函数赋值给全局变量，</p>
-<p>故getColor()中的this指向window，也可以<strong>理解为方法变为了函数</strong>，并且注意哟，只有纯js文件时，没有window会显示undefined</p>
-<p>test.getColor()是方法调用</p>
-
-    
-
-    
-
-    
-
-  </div>
-  <div class="article-info article-info-index">
-    
-    
-    
-	<div class="article-category tagcloud">
-		<i class="icon-book icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/js经典问题//" class="article-tag-list-link color2">js经典问题</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-
-    
-    <p class="article-more-link">
-      <a class="article-more-a" href="/2021/04/01/js%E7%BB%8F%E5%85%B8%E9%97%AE%E9%A2%98/this%E9%97%AE%E9%A2%98/">展开全文 >></a>
-    </p>
-    
-
-    
-    <div class="clearfix"></div>
-  </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
-    <article id="post-js经典问题/arguments对象" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-  
-  
-    <h1 itemprop="name">
-	
-	  <a class="article-title" href="/2021/04/01/js%E7%BB%8F%E5%85%B8%E9%97%AE%E9%A2%98/arguments%E5%AF%B9%E8%B1%A1/" target="_blank">arguments对象</a>
-  
-    </h1>
-  
-
-
-  
-  
-<a href="/2021/04/01/js%E7%BB%8F%E5%85%B8%E9%97%AE%E9%A2%98/arguments%E5%AF%B9%E8%B1%A1/" class="archive-article-date">
-        <time datetime="2021-04-01T08:21:33.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-04-01</time>
-</a>
-
-  
-  
-    
-
-  
-  </header>
-  
-  <div class="article-entry" itemprop="articleBody">
-    
-    
-    
-    <h1 id="arguments对象"><a href="#arguments对象" class="headerlink" title="arguments对象"></a>arguments对象</h1><h3 id="前提：函数调用时。浏览器传递的隐式参数"><a href="#前提：函数调用时。浏览器传递的隐式参数" class="headerlink" title="前提：函数调用时。浏览器传递的隐式参数"></a>前提：函数调用时。浏览器传递的隐式参数</h3><p>函数的上下文对象this、</p>
-<p>封装实参的对象arguments</p>
-<h2 id="1、arguments对象理解"><a href="#1、arguments对象理解" class="headerlink" title="1、arguments对象理解"></a>1、arguments对象理解</h2><h3 id="官方解释："><a href="#官方解释：" class="headerlink" title="官方解释："></a>官方解释：</h3><pre><code>是一个对应于传递给函数的参数的类数组对象，
-</code></pre>
-<p>理解：即其中包含了所有的函数参数，且也可以进行参数的修改</p>
-<p>样例：</p>
-<pre><code>function fun(a,b,c){
-console.log(arguments[1])  //2
-arguments[1]='23'
-console.log(this.bb)    //undefined
-console.log(b)     //23
-}
-fun(1,2,3)
-</code></pre>
-<h4 id="注意，第二个undefined由于：当函数不是对象属性时（即是函数而不是方法），this被绑定为全局对象，即为windows对象。"><a href="#注意，第二个undefined由于：当函数不是对象属性时（即是函数而不是方法），this被绑定为全局对象，即为windows对象。" class="headerlink" title="注意，第二个undefined由于：当函数不是对象属性时（即是函数而不是方法），this被绑定为全局对象，即为windows对象。"></a>注意，第二个undefined由于：当函数不是对象属性时（即是函数而不是方法），this被绑定为全局对象，即为windows对象。</h4><h2 id="2、性质分析"><a href="#2、性质分析" class="headerlink" title="2、性质分析"></a>2、性质分析</h2><h3 id="概述："><a href="#概述：" class="headerlink" title="概述："></a>概述：</h3><p>arguments 对象实际上是所在函数的一个内置类数组对象</p>
-<p>每个函数都有一个arguments属性，表示函数的实参（即<strong>外面给里面的实际的数</strong>）集合，这里的实参是重点，就是执行函数时实际传入的参数的集合。arguments不是数组而是一个对象，但它和数组很相似，所以通常称为类数组对象，以后看到类数组其实就表示arguments。arguments对象不能显式的创建，它只有在函数开始时才可用。</p>
-<p>arguments还有属性callee，length和迭代器Symbol。</p>
-<p>arguments同样具有length属性，arguments.length 为函数实参个数，可以用arguments[length]显示调用参数</p>
-<p><strong>它可以让函数调用数量不定的参数，更灵活了</strong></p>
-<p>arguments对象可以检测参数个数，模拟函数重载</p>
-<h2 id="3、特殊"><a href="#3、特殊" class="headerlink" title="3、特殊"></a>3、特殊</h2><h3 id="（1）严格模式"><a href="#（1）严格模式" class="headerlink" title="（1）严格模式"></a>（1）严格模式</h3><pre><code>function f3(a,b){
-  'use strict';
-  arguments[0] = 10;
-  arguments[1] = 20;
-  return a + b;
- }
-
- console.log(f3(3,6)); //9
-</code></pre>
-<h3 id="（2）callee属性可以返回对应的原函数，达到调用自身函数的效果，但是在严格模式中是不适用的"><a href="#（2）callee属性可以返回对应的原函数，达到调用自身函数的效果，但是在严格模式中是不适用的" class="headerlink" title="（2）callee属性可以返回对应的原函数，达到调用自身函数的效果，但是在严格模式中是不适用的"></a>（2）callee属性可以返回对应的原函数，达到调用自身函数的效果，但是在严格模式中是不适用的</h3><pre><code>var f5 = function(){
-   console.log(arguments.callee===f5); //true
-   console.log(arguments.callee===f6); //false
-  }
-
-  var f6;
-  f5(); //返回原函数，调用自身
-</code></pre>
-<p>这里的严格模式，直接报错</p>
-<h2 id="4、应用"><a href="#4、应用" class="headerlink" title="4、应用"></a>4、应用</h2><h3 id="（1）判断形参实参是否一致"><a href="#（1）判断形参实参是否一致" class="headerlink" title="（1）判断形参实参是否一致"></a>（1）判断形参实参是否一致</h3><pre><code>function add(a, b) { 
-
-var realLen = arguments.length; 
-console.log("realLen:", arguments.length);   //5
-var len = add.length; 
-console.log("len:", add.length);  //2
-
-if (realLen == len) { 
-console.log('实参和形参个数一致'); 
-} else { 
-console.log('实参和形参个数不一致');   //不一致
-} 
-   console.log(arguments[4])  //66
-   }; 
-
-   add(11,22,33,44,66);
-</code></pre>
-<p>注意，由于argument类数组存在的原因，就是不一样，没有传的实参也可以用它就行调用</p>
-<p>###（2）callee实现递归</p>
-<pre><code>var sum = function(n) { 
-
- if(n == 1) { 
-  return 1; 
- } else { 
-  return n + arguments.callee(n-1); 
-</code></pre>
-<p>　     }<br>     } </p>
-<pre><code>console.log("sum =", sum(5));   //15
-</code></pre>
-<h3 id="（3）编写一个函数求传入的若干个数字（不能用数组显示传入）的和（无形参）"><a href="#（3）编写一个函数求传入的若干个数字（不能用数组显示传入）的和（无形参）" class="headerlink" title="（3）编写一个函数求传入的若干个数字（不能用数组显示传入）的和（无形参）"></a>（3）编写一个函数求传入的若干个数字（不能用数组显示传入）的和（无形参）</h3><pre><code>function add() { 
-
-var len = arguments.length; 
-var sum = 0; 
-
-for (var i = 0; i &lt; len; ++i) { 
-  sum += arguments[i]; 
-} 
-return sum; 
-}; 
-
-add(11,22,33,44,66);
-</code></pre>
-
-    
-
-    
-
-    
-
-  </div>
-  <div class="article-info article-info-index">
-    
-    
-    
-	<div class="article-category tagcloud">
-		<i class="icon-book icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/js经典问题//" class="article-tag-list-link color2">js经典问题</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-
-    
-    <p class="article-more-link">
-      <a class="article-more-a" href="/2021/04/01/js%E7%BB%8F%E5%85%B8%E9%97%AE%E9%A2%98/arguments%E5%AF%B9%E8%B1%A1/">展开全文 >></a>
-    </p>
-    
-
-    
-    <div class="clearfix"></div>
-  </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
-    <article id="post-try" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-  
-  
-    <h1 itemprop="name">
-	
-	  <a class="article-title" href="/2021/04/01/try/" target="_blank">try</a>
-  
-    </h1>
-  
-
-
-  
-  
-<a href="/2021/04/01/try/" class="archive-article-date">
-        <time datetime="2021-04-01T07:08:18.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-04-01</time>
-</a>
-
-  
-  
-    
-
-  
-  </header>
-  
-  <div class="article-entry" itemprop="articleBody">
-    
-    
-    
-    
-    
-
-    
-
-    
-
-  </div>
-  <div class="article-info article-info-index">
-    
-    
-    
-
-    
-    <p class="article-more-link">
-      <a class="article-more-a" href="/2021/04/01/try/">展开全文 >></a>
-    </p>
-    
-
-    
-    <div class="clearfix"></div>
-  </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
-    <article id="post-js学习/js学习3" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-  
-  
-    <h1 itemprop="name">
-	
-	  <a class="article-title" href="/2021/04/01/js%E5%AD%A6%E4%B9%A0/js%E5%AD%A6%E4%B9%A03/" target="_blank">js学习3</a>
-  
-    </h1>
-  
-
-
-  
-  
-<a href="/2021/04/01/js%E5%AD%A6%E4%B9%A0/js%E5%AD%A6%E4%B9%A03/" class="archive-article-date">
-        <time datetime="2021-04-01T06:49:35.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-04-01</time>
-</a>
-
-  
-  
-    
-
-  
-  </header>
-  
-  <div class="article-entry" itemprop="articleBody">
-    
-    
-    
-    <h2 id="1、神奇的递增与递减"><a href="#1、神奇的递增与递减" class="headerlink" title="1、神奇的递增与递减"></a>1、神奇的递增与递减</h2><pre><code>let a=2
-let b=3
-let c = a-- + b //5
-</code></pre>
-<p>如果是：</p>
-<pre><code>let c = --a + b //4
-</code></pre>
-<p>而：</p>
-<pre><code>let a = {
-    valueOf(){
-        return -1
-    }
-}
-a--    //-1  
-</code></pre>
-<h2 id="2、全等与"><a href="#2、全等与" class="headerlink" title="2、全等与=="></a>2、全等与==</h2><pre><code>==会在比较之前转换操作，但是===不会转换
-
-‘22’ ==22 //true
-'22' === 22  //false
-'NaN' ==NaN  //false
-NaN ==NaN  //false
-</code></pre>
-<h3 id="注意"><a href="#注意" class="headerlink" title="注意"></a>注意</h3><pre><code>有些情况就是===也无法正确判断，例：
-
-    +0 === -0   //true
-    NaN =NaN   //false
-所以此时使用Object.is（方法）：--类似于===但是可以处理它的一些边界问题
-
-    (Object.is(+0,-0))   //false
-    (Object.is(NaN,NaN))  //true
-</code></pre>
-<h3 id="（1）条件操作符"><a href="#（1）条件操作符" class="headerlink" title="（1）条件操作符"></a>（1）条件操作符</h3><pre><code>let max = (num1&gt;num2) ? num1:num2   //返回最大值
-即为当前面是true就会执行第一个
-</code></pre>
-<h3 id="（2）逗号操作符"><a href="#（2）逗号操作符" class="headerlink" title="（2）逗号操作符"></a>（2）逗号操作符</h3><p>当用逗号操作符分割值，最后返回表达式中最后一值</p>
-<pre><code>let num1 = (1,2,3,4,0)   //0
-</code></pre>
-<h2 id="3、原始值与引用值"><a href="#3、原始值与引用值" class="headerlink" title="3、原始值与引用值"></a>3、原始值与引用值</h2><p>原始值（数据）与引用值（对象）作为不同类型数据</p>
-<p>原始值有：undefined,Null,Boolean,Number,String,Symbol</p>
-<p>且仅有引用值才可以添加属性</p>
-<h1 id="4、对象属性"><a href="#4、对象属性" class="headerlink" title="4、对象属性"></a>4、对象属性</h1><h2 id="（1）constructor属性（指向构造函数）"><a href="#（1）constructor属性（指向构造函数）" class="headerlink" title="（1）constructor属性（指向构造函数）"></a>（1）constructor属性（指向构造函数）</h2><p>返回对创建此对象的数组函数的引用。</p>
-<pre><code>function fun(){
- age=12
-}
-var s = new fun()   //这个感觉数组与对象都报错了
-console.log(s.constructor == fun)    //true
-console.log(s.constructor == fun.prototype.constructor)  //true
-主要由于两者都指向原型对象
-console.log(s == fun.prototype)   //false
-</code></pre>
-<p>所以可以理解为：</p>
-<p>在Javascript 语言中，constructor 属性是专门为 <strong>构造函数</strong> 而设计的，它存在于每一个function 的prototype 属性中。这个constructor 保存了指向 原型的prototype。 </p>
-<p>除非进行修改，否则就是实例中的属性定义也不会改变：</p>
-<pre><code>var ss = new fun()
-&lt;!-- 实例的属性改变,覆盖了原型中的属性 --&gt;
-ss.name = 'make'
-console.log(ss.constructor == fun.prototype.constructor)  //true
-fun.prototype = {
-    age:45,
-    name:'sad'
-}
-console.log(ss.constructor == fun.prototype.constructor)  //false
-</code></pre>
-<h4 id="重写构造函数的原型之后，再创建的实例才会用新的原型，否则之前的实例会引用最初的，但是当原型改变，并未重写时，那么之前的实例也会同步"><a href="#重写构造函数的原型之后，再创建的实例才会用新的原型，否则之前的实例会引用最初的，但是当原型改变，并未重写时，那么之前的实例也会同步" class="headerlink" title="重写构造函数的原型之后，再创建的实例才会用新的原型，否则之前的实例会引用最初的，但是当原型改变，并未重写时，那么之前的实例也会同步"></a>重写构造函数的原型之后，再创建的实例才会用新的原型，否则之前的实例会引用最初的，但是当原型改变，并未重写时，那么之前的实例也会同步</h4><h3 id="解释："><a href="#解释：" class="headerlink" title="解释："></a>解释：</h3><p>当作为fun作为构造函数来创建对象时，对象实例的内部自动保存一个指向其构造函数（这里就是fun）的 prototype 对象的一个属性</p>
-<p>所以我们在每一个对象实例中就可以访问构造函数的 prototype 所有拥有的全部属性和方法，就好像它们是实例自己的一样。当然该实例也有一个 constructor属性了（从 prototype 那里获得的），每一个对象实例都可以通过 constrcutor 对象访问它的<strong>构造函数</strong>，</p>
-<h3 id="同理：instanceof似乎判断更好"><a href="#同理：instanceof似乎判断更好" class="headerlink" title="同理：instanceof似乎判断更好"></a>同理：instanceof似乎判断更好</h3><pre><code>function fun(){
- age=12
-}
-var s = new fun()  
-console.log(s instanceof fun) 
-</code></pre>
-<h2 id="（2）-proto-属性（指向prototype）"><a href="#（2）-proto-属性（指向prototype）" class="headerlink" title="（2）__proto__属性（指向prototype）"></a>（2）__proto__属性（指向prototype）</h2><p>首先最值得注意的就是前后是两条下划线_ _</p>
-<p>具体的指向该对象的原型，从任何对象沿用它开始遍历都可以追溯到Object.prototype。其实主要由于实例的内部[[prototype]]无法直接访问，只能通过它来访问对象原型</p>
-<pre><code>function fun(){
- age=12
-}
-var s = new fun()  
-console.log(s.__proto__==fun)  //false
-console.log(s.__proto__==fun.prototype)  //true
-注意这里返回的是原型对象prototype，而fun是函数
-console.log(s.__proto__.constructor ==fun)   //true
-</code></pre>
-<h2 id="（3）prototype属性（访问到原型prototype）"><a href="#（3）prototype属性（访问到原型prototype）" class="headerlink" title="（3）prototype属性（访问到原型prototype）"></a>（3）prototype属性（访问到原型prototype）</h2><p>用法：prototype 属性使您有能力向对象添加属性和方法。</p>
-<pre><code>object.prototype.name=value
-</code></pre>
-<p>实例：</p>
-<pre><code>function employee(name,job,born)
-{
-this.name=name;
-this.job=job;
-this.born=born;
-}
-
-var bill=new employee("Bill Gates","Engineer",1985);
-
-employee.prototype.salary=null;  //直接在原型上添加，但是这里直接写也一样
-bill.salary=20000;     //构造的对象也可以使用
-
-document.write(bill.salary);
-</code></pre>
-<h2 id="联系"><a href="#联系" class="headerlink" title="联系"></a>联系</h2><p>对象都有__proto__属性，而且他指向的就是对象的原型。</p>
-<pre><code>function Person() {
-}
-var person = new Person();
-console.log(person.__proto__ === Person.prototype); // true
-</code></pre>
-<p>联系图</p>
-<p><a target="_blank" rel="noopener" href="https://imgtu.com/i/cmNPwd"><img src="https://z3.ax1x.com/2021/04/02/cmNPwd.png" alt="cmNPwd.png"></a></p>
-<p>我们读取一个属性的时候，如果在实例属性上找到了，就读取它，不会管原型属性上是否还有相同的属性，这其实就是属性屏蔽，即当实例属性和原型属性拥有相同名字的时候，实例属性会屏蔽原型属性，记住只是屏蔽，不会修改，原型属性那个值还在；但是如果在实例属性上没有找到的话，就会在实例的原型上去找，如果原型上还没有，就继续到原型的原型上去找，直到尽头。</p>
-<p>这个尽头是啥？由于原型也是对象，所以也会有__proto__属性，也就是原型的原型；最后就可以找到Object.prototype这个大boss，所有原型对象都是Object构造函数生成的（Object.prototype值为null）。正是因为所有的原型最终都会指向Object.prototype，所以对象的很多方法其实都是继承于此，比如toString()、valueOf()，前面用到的hasOwnProperty，甚至是.constructor、proto</p>
-<p>样例：</p>
-<pre><code>function fun(){
- age=12
-}
-var s = new fun()  
-console.log(fun.prototype.__proto__ == Object.prototype)  //true
-</code></pre>
-<p><a target="_blank" rel="noopener" href="https://imgtu.com/i/cmd3tA"><img src="https://z3.ax1x.com/2021/04/02/cmd3tA.png" alt="cmd3tA.png"></a></p>
-<p>补充方法：</p>
-<p>1）检查对象是否有该<strong>属性</strong>：</p>
-<pre><code>function Person() {
-}  
-var person1 = new Person()
-// 实例属性
-person1.name = ‘J’
-person1.hasOwnProperty(‘name’)  // true
-</code></pre>
-<p>2）in则会遍历所有属性，不管是实例上的，还是原型上的：</p>
-<pre><code>function Person() {
-}
-Person.prototype.age = ‘100’
-var person1 = new Person()
-person1.name = ‘J’
-
-'name' in person1 // true  实例
-'age' in person1  // true   原型~
-
-for (var prop in person1) { 
-        console.log(prop)  // name age
-}
-</code></pre>
-
-    
-
-    
-
-    
-
-  </div>
-  <div class="article-info article-info-index">
-    
-    
-    
-	<div class="article-category tagcloud">
-		<i class="icon-book icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/js学习//" class="article-tag-list-link color5">js学习</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-
-    
-    <p class="article-more-link">
-      <a class="article-more-a" href="/2021/04/01/js%E5%AD%A6%E4%B9%A0/js%E5%AD%A6%E4%B9%A03/">展开全文 >></a>
-    </p>
-    
-
-    
-    <div class="clearfix"></div>
-  </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
-    <article id="post-js学习/js学习2" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-  
-  
-    <h1 itemprop="name">
-	
-	  <a class="article-title" href="/2021/04/01/js%E5%AD%A6%E4%B9%A0/js%E5%AD%A6%E4%B9%A02/" target="_blank">js学习2</a>
-  
-    </h1>
-  
-
-
-  
-  
-<a href="/2021/04/01/js%E5%AD%A6%E4%B9%A0/js%E5%AD%A6%E4%B9%A02/" class="archive-article-date">
-        <time datetime="2021-04-01T06:49:20.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-04-01</time>
-</a>
-
-  
-  
-    
-
-  
-  </header>
-  
-  <div class="article-entry" itemprop="articleBody">
-    
-    
-    
-    <h2 id="1、Symbol类型"><a href="#1、Symbol类型" class="headerlink" title="1、Symbol类型"></a>1、Symbol类型</h2><h3 id="（1）基本Symbol方法"><a href="#（1）基本Symbol方法" class="headerlink" title="（1）基本Symbol方法"></a>（1）基本Symbol方法</h3><pre><code>let a = Symbol('foo')  //foo参数是对符号的描述
-let b = Symbol('ad')   
-a === b   //false
-</code></pre>
-<p>注意Symbo不能作为构造函数与new用</p>
-<h3 id="2-使用全局符号注册表"><a href="#2-使用全局符号注册表" class="headerlink" title="(2)使用全局符号注册表"></a>(2)使用全局符号注册表</h3><p>这时代表的是需要共享和重用的符号</p>
-<pre><code>let a = Symbol.for('a')
-let b = Symbol.for('a')
-a===b  //true
-</code></pre>
-<h2 id="2、set数据结构"><a href="#2、set数据结构" class="headerlink" title="2、set数据结构"></a>2、set数据结构</h2><h3 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h3><p>Set类似于数组，但是成员变量的唯一且不重复，我们把Set叫做集合，但是Set可以是集合，但是集合不一定是set</p>
-<h3 id="创建"><a href="#创建" class="headerlink" title="创建"></a>创建</h3><pre><code>var a = new Set([1,2,3])
-a.size   //3 
-就一个size属性返回set个数
-</code></pre>
-<h3 id="应用，数组转set，set数组"><a href="#应用，数组转set，set数组" class="headerlink" title="应用，数组转set，set数组"></a>应用，数组转set，set数组</h3><pre><code>数组去重复值：
-a = [1,2,3,2,3]
-let c = new Set(a)  //已重复值，且变为集形式
-
-a = [...c]  //变回数组
-</code></pre>
-<h2 id="3、for循环"><a href="#3、for循环" class="headerlink" title="3、for循环"></a>3、for循环</h2><h3 id="（1）foreach方法"><a href="#（1）foreach方法" class="headerlink" title="（1）foreach方法"></a>（1）foreach方法</h3><p><strong>关建在于无法退出foreach循环</strong></p>
-<pre><code>array.forEach(function(value){
-    console.log(value)
-})
-</code></pre>
-<h3 id="2-for-of与for-in"><a href="#2-for-of与for-in" class="headerlink" title="(2)for of与for in"></a>(2)for of与for in</h3><p>概述：for in是ES5确定的，而for of是ES6指定的， 样例：</p>
-<pre><code>let a = [3,4,5]
-a.foo = 'hehe'
-
-for(let i in a){
-    console.log(a) //'1','2','3','foo'
-}
-
-for(let i of a){
-    console.log(a) //'3','4','5'
-}
-
-所以，forin循环主要遍历的事件是对象，注意，它缺点如下：
-
-    1、数组的建名是，数字，但是它返回的建名是字符串
-    2、它不仅仅遍历数字建名还会手动添加其他建，
-    3、某些情况下，forin循环会以任意顺序遍历建明
-    
-</code></pre>
-<h3 id="注意"><a href="#注意" class="headerlink" title="注意"></a>注意</h3><p> 对于普通对象，for of不能直接使用，应该部署Iterator接口才可以使用，但是这时可以用for in来遍历建名</p>
-<h2 id="4、迭代器"><a href="#4、迭代器" class="headerlink" title="4、迭代器"></a>4、迭代器</h2><p>JavaScript迭代器是在ES6中引入的，用于循环一系列值，通常是某种集合。根据定义，迭代器必须实现next()。</p>
-<p>函数，该函数以{value，done}的形式返回对象，其中 value 是迭代序列中的下一个值， done是一个布尔值，用于确定序列是否已被使用.</p>
-<p><a target="_blank" rel="noopener" href="https://blog.csdn.net/light_fisher/article/details/113939762">https://blog.csdn.net/light_fisher/article/details/113939762</a></p>
-<h2 id="5、filter函数与map函数"><a href="#5、filter函数与map函数" class="headerlink" title="5、filter函数与map函数"></a>5、filter函数与map函数</h2><h3 id="filter函数"><a href="#filter函数" class="headerlink" title="filter函数"></a>filter函数</h3><p>返回一个新数组，里面的元素都是检查原数组中<strong>符合条件的</strong>元素</p>
-<h3 id="map函数"><a href="#map函数" class="headerlink" title="map函数"></a>map函数</h3><p>也是返回一个新数组，但是他是由原数组<strong>通过操作之后变化</strong>得到的</p>
-<p>样例：</p>
-<pre><code>const array1 = [1, 4, 9, 16];
-const map1 = array1.map(x =&gt; x * 2);
-console.log(map1);// Array [2, 8, 18, 32]
-
-返回数组 ages 中所有元素都大于 18 的元素:
-
-var ages = [32, 33, 16, 40];
-
-function checkAdult(age) {
-return age &gt;= 18;
-}
-
-function myFunction() {
-    document.getElementById("demo").innerHTML = ages.filter(checkAdult);
-}
-</code></pre>
-<h3 id="扩展innerHTML"><a href="#扩展innerHTML" class="headerlink" title="扩展innerHTML"></a>扩展innerHTML</h3><p>innerHTML 属性用于设置或返回指定标签之间的 HTML 内容。</p>
-<p>innerHTML在JS是双向功能：获取对象的内容  或  向对象插入内容；</p>
-<pre><code>如：&lt;div id="aa"&gt;这是内容&lt;/div&gt; ，
-</code></pre>
-<p>我们可以通过  document.getElementById(‘aa’).innerHTML 来获取id为aa的对象的内嵌内容；</p>
-<p>也可以对某对象插入内容，如  document.getElementById(‘abc’).innerHTML=’这是被插入的内容’;<br>这样就能向id为abc的对象插入内容。</p>
-
-    
-
-    
-
-    
-
-  </div>
-  <div class="article-info article-info-index">
-    
-    
-    
-	<div class="article-category tagcloud">
-		<i class="icon-book icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/js学习//" class="article-tag-list-link color5">js学习</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-
-    
-    <p class="article-more-link">
-      <a class="article-more-a" href="/2021/04/01/js%E5%AD%A6%E4%B9%A0/js%E5%AD%A6%E4%B9%A02/">展开全文 >></a>
-    </p>
-    
-
-    
-    <div class="clearfix"></div>
-  </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
-    <article id="post-js学习/js学习1" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-  
-  
-    <h1 itemprop="name">
-	
-	  <a class="article-title" href="/2021/04/01/js%E5%AD%A6%E4%B9%A0/js%E5%AD%A6%E4%B9%A01/" target="_blank">js学习1</a>
-  
-    </h1>
-  
-
-
-  
-  
-<a href="/2021/04/01/js%E5%AD%A6%E4%B9%A0/js%E5%AD%A6%E4%B9%A01/" class="archive-article-date">
-        <time datetime="2021-04-01T06:45:22.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-04-01</time>
-</a>
-
-  
-  
-    
-
-  
-  </header>
-  
-  <div class="article-entry" itemprop="articleBody">
-    
-    
-    
-    <p>〃不枉俗尘づ 2021/4/1 14:47:31</p>
-<h3 id="1、ECMAscript特点"><a href="#1、ECMAscript特点" class="headerlink" title="1、ECMAscript特点"></a>1、ECMAscript特点</h3><p>（1）ECMAscript区别大小写</p>
-<p>（2）标识符的定一般采用小驼峰式命名，即为第一个单词字小写，其他单字母大写（大驼峰式全部单词首字母大写</p>
-<p>（3）第一个字符不能是数字</p>
-<p>（4）ECMAscript是松类型的，所以不同数据类型变量声明可以用一条语句</p>
-<p>(5)简单数据类型：（原始类型）Undefined，Null,Boolean,Number,String,Symbol(es6新增)</p>
-<p>还有一种复类型叫做Object，且ECMAscript不能定义自己的数据类型，最近新加了Bigint</p>
-<p>这里注意·typeof返回值，null为object，且多一个function</p>
-<h2 id="2、学名："><a href="#2、学名：" class="headerlink" title="2、学名："></a>2、学名：</h2><p>（1）代码块：｛｝</p>
-<p>（2）动态类型语言：一般指的是脚本语言，例如JS，python，PHP</p>
-<p>（3）js支持冒泡的事件：click,dbclick,keyup,keypress,mousedown,mousemove,mouseout,mouseover,mouseup,scroll</p>
-<p>不支持的事件：load,unload,mouseenter,mouseleave,blur,focus,resize,error</p>
-<p>(4)js内置的可迭代对象：</p>
-<p>数组Array，字符串String</p>
-<p>Map（map对象含map功能），Set（类似map不存value）</p>
-<p>arguments   Typed Arrays</p>
-<p>Generator（es6新增）</p>
-<p>(5)CDN：</p>
-<p>即内容分发网络。CDN是构建在现有网络基础之上的智能虚拟网络，依靠部署在各地的边缘服务器，</p>
-<p>可以用于获取就近用户所需的内容，提高用户访问的响应速度与命中率</p>
-<p>（6）URL:</p>
-<p>统一资源定位系统（uniform resource locator;URL）是因特网的万维网服务程序上用于指定信息位置的表示方法,可以被DNS解析为IP地址</p>
-<p>（7） DNS（域名解析系统）</p>
-<p>（8）迭代：意思是反复多次执行一段程序，一般有明确终止条件。</p>
-<p>(9)工厂函数：指这些内建函数都是类对象，当你调用他们时，实际上是创建了一个“类实例”。</p>
-<p>特点为：</p>
-<p>1、是一个函数</p>
-<p>2、用来创建对象</p>
-<p>3、像工厂一样，生产的函数都是有一样的属性</p>
-<p>（10）散列表（Hash table，也叫哈希表），是根据关键码值(Key value)而直接进行访问的数据结构。</p>
-<p>也就是说，它通过把关键码值映射到表中一个位置来访问记录，以加快查找的速度。这个映射函数叫做散列函数，存放记录的数组叫做散列表。</p>
-<p>(11)语法糖：指在计算机语言中添加某语法，对语言功能没有影响，但是方便程序员使用.</p>
-<p>(12)细粒度,细粒度的对象,或者细粒度模型,表示对业务逻辑中的对象,加以细化,得到更科学的对象模型</p>
-<p>粒度本为数据库的名词,表示系统内存扩展增量的最小值.</p>
-<h2 id="3、let-var区别"><a href="#3、let-var区别" class="headerlink" title="3、let var区别"></a>3、let var区别</h2><p>（1）let声明的范围是块作用域（找｛｝），</p>
-<p>  var声明的范围是函数作用域</p>
-<p>  （2）let不允同一个块作用中出现冗余声明，而var允许</p>
-<p>  （3）var允许出现变量的声明的提升，而let不能在作用域中提升所以会出现“暂时性死区”   例：</p>
-<pre><code> console.log(a)  //ReferenceError
- let a = 3   
-</code></pre>
-<p>（4）与var不同let在全局作用域声明的变量，不会变为window对象的属性。例：<br>    let a =’a’<br>    console.log(window.a) //undefined</p>
-<p>（5）let常用于普通for循环</p>
-<h2 id="4、const特点"><a href="#4、const特点" class="headerlink" title="4、const特点"></a>4、const特点</h2><p>（1）声明之前必进行初始化，初始化值不可变，当然这个限制仅限于<strong>指向变量</strong>的引用，也就是如果申明一个对象，可以为对象内部属性赋值</p>
-<p>（2）申明的作用域也是块，且不许重复声明</p>
-<p>（3）const用于for循环仅限于只是创建一个新变量，这对于for－in，for－of有意义 例：</p>
-<pre><code>for(const key in{a:1,b:2}){
-    console.log(key)   //a,b
-}
-</code></pre>
-<p>例二：</p>
-<pre><code>for(const value of[1,2,3,4,5]){
-    console.log(value)   //1,2,3,4,5
-}
-</code></pre>
-<p>注意var的声明在于最接近的上下文，但是如果并未声明而直接初始化，则元素自动添加为全局上下文</p>
-<h2 id="5、Boolean"><a href="#5、Boolean" class="headerlink" title="5、Boolean"></a>5、Boolean</h2><p>当进行：</p>
-<pre><code>let a ='asd'
-if(a){
-    console.log(a)
-}
-//if(a)等价为if(Boolean(a))
-//且这个函数特别对于0，‘’，NaN返回false
-</code></pre>
-<h2 id="6、Number"><a href="#6、Number" class="headerlink" title="6、Number"></a>6、Number</h2><h3 id="1。进制问题"><a href="#1。进制问题" class="headerlink" title="1。进制问题"></a>1。进制问题</h3><p>（1）八进制：第一个数必须为0，比如070，当是090时，浏览器自动当做为十进制，且，在”use strict”模式，八进制报错</p>
-<p>（2）十六进制：前缀为0x（区分大小写），之后的字母大小写都可以</p>
-<h3 id="2-浮点值"><a href="#2-浮点值" class="headerlink" title="2.浮点值"></a>2.浮点值</h3><p>科学记数法</p>
-<pre><code>let a = 3.13e8  //31300000
-let b = 3e-8  //0.0000003
-</code></pre>
-<p>特注意浮点数的计算不能算精，所以不要测试特定浮点数的值</p>
-<h3 id="3、NaN特点"><a href="#3、NaN特点" class="headerlink" title="3、NaN特点"></a>3、NaN特点</h3><p>涉及到NaN的操作始终返回NaN，且NaN不等于包括NaN在内的任何值</p>
-<h3 id="4、数转转换"><a href="#4、数转转换" class="headerlink" title="4、数转转换"></a>4、数转转换</h3><p>1、Number()－－可用任何数据类型：</p>
-<pre><code>Number('12ds')   --NaN
-</code></pre>
-<p>2、parseInt — 主要用于对字符串进行转化</p>
-<pre><code>parseInt('123blue') ---123
-parseInt('af',16)---16 第二个参数表示进制底数
-parseInt('22.5')  ---22
-</code></pre>
-<p>3、parseFloat－－－与parseInt一样都是用于对字符串的解析，且会自动解析第一个小数点，忽略第二个，但是他不能传入参数</p>
-<pre><code>parseFloat('22.34.4')---22.34
-</code></pre>
-<h2 id="7、tostring-方法"><a href="#7、tostring-方法" class="headerlink" title="7、tostring()方法"></a>7、tostring()方法</h2><p>主要就是返当前值的字符串等价物－－－加”””就是<br>    true.toString()  //“true”<br>    10.tostring(2)  //‘1010’<br>    数字加入字符串表示进制数</p>
-<p><strong>注意tostring对null与undefined返回错误！！</strong></p>
-<p>这里string可以转化他们！！</p>
-<pre><code>String(null) // 'null'   所以String更广
-</code></pre>
-<h2 id="8、得到原始字符串String-raw"><a href="#8、得到原始字符串String-raw" class="headerlink" title="8、得到原始字符串String raw"></a>8、得到原始字符串String raw</h2><pre><code>`\u0049` ---@(字符)
-String.raw(`\u0049`)---- \u0049
-</code></pre>
-<p>注意反引号的应用·主要对于模板字符串，参考：</p>
-<pre><code>https://blog.csdn.net/K346K346/article/details/112540252
-</code></pre>
-
-    
-
-    
-
-    
-
-  </div>
-  <div class="article-info article-info-index">
-    
-    
-    
-	<div class="article-category tagcloud">
-		<i class="icon-book icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/js学习//" class="article-tag-list-link color5">js学习</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-
-    
-    <p class="article-more-link">
-      <a class="article-more-a" href="/2021/04/01/js%E5%AD%A6%E4%B9%A0/js%E5%AD%A6%E4%B9%A01/">展开全文 >></a>
-    </p>
-    
-
-    
-    <div class="clearfix"></div>
-  </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
-    <article id="post-node与vue初学/第三天日志" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-  
-  
-    <h1 itemprop="name">
-	
-	  <a class="article-title" href="/2021/03/30/node%E4%B8%8Evue%E5%88%9D%E5%AD%A6/%E7%AC%AC%E4%B8%89%E5%A4%A9%E6%97%A5%E5%BF%97/" target="_blank">第三天日志</a>
-  
-    </h1>
-  
-
-
-  
-  
-<a href="/2021/03/30/node%E4%B8%8Evue%E5%88%9D%E5%AD%A6/%E7%AC%AC%E4%B8%89%E5%A4%A9%E6%97%A5%E5%BF%97/" class="archive-article-date">
-        <time datetime="2021-03-30T13:54:30.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-03-30</time>
-</a>
-
-  
-  
-    
-
-  
-  </header>
-  
-  <div class="article-entry" itemprop="articleBody">
-    
-    
-    
-    <h1 id="第三天日志"><a href="#第三天日志" class="headerlink" title="第三天日志"></a>第三天日志</h1><h2 id="一、vue的学习"><a href="#一、vue的学习" class="headerlink" title="一、vue的学习"></a>一、vue的学习</h2><p>vue引用，样例：：</p>
-<pre><code>HTML：    &lt;div id="app"&gt;
-          {{ message }}     //常用文本查值 
-           //视图部分
-            &lt;/div&gt;
-</code></pre>
-<p>js部分：</p>
-<pre><code>var app = new Vue({      
-                        //Vue全局变量，Vue函数 
-                        //app代表vue的应用对象，一个对象
-                        //饿了‘与data都是Vue的属性’
- el: '#app',            //里面相当于传递对象作为参数 选择器 
-  data: {
-   message: 'Hello Vue!'   //变量初始化，所有变量都必须在里声明，否则无法用
-//脚本部分
-  }       })
-</code></pre>
-<h3 id="1-常见的v－指令"><a href="#1-常见的v－指令" class="headerlink" title="1.常见的v－指令"></a>1.常见的v－指令</h3><p><a target="_blank" rel="noopener" href="https://imgtu.com/i/cFDBJf"><img src="https://z3.ax1x.com/2021/03/30/cFDBJf.png" alt="cFDBJf.png"></a></p>
-<h3 id="2-vue的组件元素"><a href="#2-vue的组件元素" class="headerlink" title="2.vue的组件元素"></a>2.vue的组件元素</h3><pre><code>例子：      
-HTML：&lt;div id="app-7"&gt;
-  &lt;ol&gt;
-&lt;!--
-  现在我们为每个 todo-item 提供 todo 对象
-  todo 对象是变量，即其内容可以是动态的。
-  我们也需要为每个组件提供一个“key”，稍后再
-  作详细解释。
---&gt;
-&lt;todo-item
-  v-for="item in groceryList"
-  v-bind:todo="item"  //属性使用
-  v-bind:key="item.id"
-&gt;&lt;/todo-item&gt;   
-</code></pre>
-<p>// 组件的调用表签名=组件名<br>如果再引入一个todo－item也是这个组件实例<br>  </p>
-
-
-<p>JS部分：</p>
-<pre><code>Vue.component('todo-item', {
-  props: ['todo'],   //组件属性
-  template: '&lt;li&gt;{{ todo.text }}&lt;/li&gt;'   //组件模板内容
-})    
-//   component函数创建组件
-  第一个参数为组件名称，第二个参数以对象的形式描述组件
-  组件：可复用的vue实例，方便常用函数的调用
-
-var app7 = new Vue({
-  el: '#app-7',
-  data: {
-    groceryList: [
-      { id: 0, text: '蔬菜' },
-     id: 1, text: '奶酪' },
-  { id: 2, text: '随便其它什么人吃的东西' }
-]
-  }
-})
-</code></pre>
-
-    
-
-    
-
-    
-
-  </div>
-  <div class="article-info article-info-index">
-    
-    
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">初学</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-    
-	<div class="article-category tagcloud">
-		<i class="icon-book icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/node与vue初学//" class="article-tag-list-link color1">node与vue初学</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-
-    
-    <p class="article-more-link">
-      <a class="article-more-a" href="/2021/03/30/node%E4%B8%8Evue%E5%88%9D%E5%AD%A6/%E7%AC%AC%E4%B8%89%E5%A4%A9%E6%97%A5%E5%BF%97/">展开全文 >></a>
-    </p>
-    
-
-    
-    <div class="clearfix"></div>
-  </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
-    <article id="post-node再战/node学习5" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-  
-  
-    <h1 itemprop="name">
-	
-	  <a class="article-title" href="/2021/03/30/node%E5%86%8D%E6%88%98/node%E5%AD%A6%E4%B9%A05/" target="_blank">node学习5</a>
-  
-    </h1>
-  
-
-
-  
-  
-<a href="/2021/03/30/node%E5%86%8D%E6%88%98/node%E5%AD%A6%E4%B9%A05/" class="archive-article-date">
-        <time datetime="2021-03-30T13:32:20.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-03-30</time>
-</a>
-
-  
-  
-    
-
-  
-  </header>
-  
-  <div class="article-entry" itemprop="articleBody">
-    
-    
-    
-    <h1 id="1、箭头函数"><a href="#1、箭头函数" class="headerlink" title="1、箭头函数"></a>1、箭头函数</h1><h3 id="最简模式："><a href="#最简模式：" class="headerlink" title="最简模式："></a>最简模式：</h3><pre><code>var fun = (s1,s2)=&gt;s1+s2
-</code></pre>
-<p>但是这种仅限于仅有return并无其他语句时使用</p>
-<p>当有其他语句时，应该执行：</p>
-<pre><code>var fun1 =(s1,s2)=&gt;{
-s1=3;
-s2 = s1+4
-return s2
-}
-</code></pre>
-<p><strong>当然了，就是没有参数，这些也不能省略</strong></p>
-<pre><code>var a =()=&gt;{7}
-</code></pre>
-<p><strong>但是如果仅有一个参数（）可省略,但是不建议</strong></p>
-<pre><code>var a = s=&gt;{
-var aa =3;
-return aa+s
-}
-</code></pre>
-<h3 id="箭头函数语法点："><a href="#箭头函数语法点：" class="headerlink" title="箭头函数语法点："></a>箭头函数语法点：</h3><p><a target="_blank" rel="noopener" href="https://imgtu.com/i/6XXsTH"><img src="https://z3.ax1x.com/2021/03/26/6XXsTH.png" alt="6XXsTH.png"></a></p>
-<p>注意箭头函数就当作一个普通函数来使用，不要瞎用</p>
-<p>注意其this指向问题：</p>
-<pre><code>var name = 23
-var obj = {
-name:34
-fun:()=&gt;{
-console.log(this.name)
-console.log(this)
-}
-}
-
-//undefined,{}
-注意this的指向为固定的用call和apply也无法改变
-</code></pre>
-<p>call与apply用法：</p>
-<p><a target="_blank" rel="noopener" href="https://blog.csdn.net/ganyingxie123456/article/details/70855586">https://blog.csdn.net/ganyingxie123456/article/details/70855586</a></p>
-<h1 id="2、express框架"><a href="#2、express框架" class="headerlink" title="2、express框架"></a>2、express框架</h1><h3 id="基本例子"><a href="#基本例子" class="headerlink" title="基本例子"></a>基本例子</h3><pre><code>const express = require('express')
- 设置get请求的监听
-const app = express()
- app.get('/',function(req,res){
-     yewu.getall(req,res)
- })
-
- app.get('/getone',function(req,res){
-     yewu.getone(req,res)
- })
-
-app.listen(666,()=&gt;{
-console.log('请访问127.0.0.1:666')
-})
-</code></pre>
-<p>当需要设置外部路由时</p>
-<p>即需要<strong>封装路由功能</strong>时，需要使用express.Router</p>
-<pre><code>var express = require('express')
-// 调用路由方法，获取路由对象
-var router = express.Router()
-// 这里不能使用app。。。因为无法进行导出
-
-// 设置各种请求方式的路由
-router.get('/',function(req,res){
-    res.end('1233')
-})
-router.post('/',function(req,res){
-    res.end('post')
-});
-
-module.exports = router
-</code></pre>
-<p>http.js使用：</p>
-<pre><code>// 导入 外置 路由
-var router = require('./router')
-// 引用外置路由,use方法
-app.use(router)
-</code></pre>
-<p>就行了！！！</p>
-<p>当然了支持express<strong>链式操作</strong></p>
-<pre><code> router
- .get('/',function(req,res){
-     res.end('1233')
- })
-.post('/',function(req,res){
-     res.end('post')
- });
-</code></pre>
-<h2 id="神奇的简写："><a href="#神奇的简写：" class="headerlink" title="神奇的简写："></a>神奇的简写：</h2><pre><code>下面是全部的
-    router.get('/',yewu.getall)
-
- 这个理解可以理解为，yewu.getone为回调函数
- 且由于yewu文件中的getone函数有这两个参数并且可以被系统调用，
- 所以这时候系统直接把yewu文件中的getone函数当作了回调函数
- 就是直接一点没有中间步骤
-
-.get('/getone',(req,res)=&gt;{
-     yewu.getone(req,res)
- })
-</code></pre>
-<p>并且这个匿名函数</p>
-<pre><code>(req,res)=&gt;{
-     yewu.getone(req,res)
- })
-</code></pre>
-<p>的作用就是调用了 yewu.getone(req,res)函数，所以无其他作用，所以直接调用也是可以的所以可简化为此</p>
-<h3 id="方便理解的例子："><a href="#方便理解的例子：" class="headerlink" title="方便理解的例子："></a>方便理解的例子：</h3><p> 1实现数据的拿到，且2表示函数调用且需要传入参数，并且需要在另一个函数中打印  过程<br> 1可以理解为系统的函数</p>
-<pre><code>// 1
-function fun(call){
-    var a=1,b=3;
-    call(a,b)
-}
-
-// 2
-function pro(a,b){
-        console.log(a+b)
-}
-
-// 3
-fun(function(a,b){
-    pro(a,b)
-})
-</code></pre>
-<p>可以理解为：</p>
-<pre><code> var get = function (call){
-     var a=1,b=3;
-     call(a,b)
- }
- var pro = function (a,b){
-     console.log(a+b)
- }
- get(pro)
-</code></pre>
-<p><strong>注意：</strong></p>
-<pre><code> 因为
- fun(pro)
- fun(function(a,b){pro(a,b)})
- 这两个是等效的
-</code></pre>
-<h1 id="3、art-template模板"><a href="#3、art-template模板" class="headerlink" title="3、art-template模板"></a>3、art-template模板</h1><h3 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h3><p>当时失败了，所以用的源码，见官网</p>
-<p><a target="_blank" rel="noopener" href="https://aui.github.io/art-template/docs/installation.html">https://aui.github.io/art-template/docs/installation.html</a></p>
-<h3 id="实例与讲解："><a href="#实例与讲解：" class="headerlink" title="实例与讲解："></a>实例与讲解：</h3><pre><code>&lt;!DOCTYPE html&gt;
-
-&lt;html&gt;
-&lt;head&gt;
-&lt;title&gt;if -- else&lt;/title&gt;
-&lt;meta charset="UTF-8"&gt;
-&lt;script src="./art-template.js"&gt;&lt;/script&gt;
-&lt;/head&gt;
-&lt;body&gt;
-&lt;!-- 这个外部div可以理解为模板引用的父容器 --&gt;
-&lt;div id="app"&gt;
-&lt;!-- 这个是用script模板 --&gt;
-&lt;script type="text/html" id="test"&gt;
-{{if isAdmin}}
-姓名：&lt;span&gt;{{admin.name}}&lt;/span&gt;&lt;br&gt;
-性别：&lt;span&gt;{{admin.sex}}&lt;/span&gt;&lt;br&gt;
-职务：&lt;span&gt;{{admin.position}}&lt;/span&gt;
-{{else}}
-姓名：&lt;span&gt;{{staff.name}}&lt;/span&gt;&lt;br&gt;
-性别：&lt;span&gt;{{staff.sex}}&lt;/span&gt;&lt;br&gt;
-职务：&lt;span&gt;{{staff.position}}&lt;/span&gt;
-{{/if}}
-&lt;/script&gt;
-&lt;/div&gt;
-
-&lt;script type="text/javascript"&gt;
-data = {
-    isAdmin: true,
-    admin: {name: '张三', sex: '男', position: "部门经理"},
-    staff: {name: '李四', sex: '男', position: "普通员工"}
-}
-// data为模板数据，test为定义的script的id，且必须为id
-       var  html = template('test',data);
-   //将生成的模板填充添加到对应的容器(即为父容器之中)中
-document.getElementById("app").innerHTML = html;
-&lt;/script&gt;
-&lt;/body&gt;
-</code></pre>
-<h2 id="4、方法简写"><a href="#4、方法简写" class="headerlink" title="4、方法简写"></a>4、方法简写</h2><p>为对象添加方法时，可以简写：</p>
-<pre><code>var obj = {
-ff:function(){
-}
-
-简写为：
-ff(){{}
-}
-</code></pre>
-
-    
-
-    
-
-    
-
-  </div>
-  <div class="article-info article-info-index">
-    
-    
-    
-	<div class="article-category tagcloud">
-		<i class="icon-book icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/node再战//" class="article-tag-list-link color2">node再战</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-
-    
-    <p class="article-more-link">
-      <a class="article-more-a" href="/2021/03/30/node%E5%86%8D%E6%88%98/node%E5%AD%A6%E4%B9%A05/">展开全文 >></a>
-    </p>
-    
-
-    
-    <div class="clearfix"></div>
-  </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
   
     <nav id="page-nav">
-      <a class="extend prev" rel="prev" href="/page/2/">&amp;laquo; Prev</a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span><a class="page-number" href="/page/4/">4</a><a class="page-number" href="/page/5/">5</a><a class="page-number" href="/page/6/">6</a><a class="extend next" rel="next" href="/page/4/">Next &amp;raquo;</a>
+      <a class="extend prev" rel="prev" href="/page/2/">&amp;laquo; Prev</a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span><a class="page-number" href="/page/4/">4</a><a class="page-number" href="/page/5/">5</a><span class="space">&hellip;</span><a class="page-number" href="/page/7/">7</a><a class="extend next" rel="next" href="/page/4/">Next &amp;raquo;</a>
     </nav>
   
 
@@ -2395,11 +2437,23 @@ ff(){{}
           <ul class="article-tag-list" q-show="showTags">
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">axios</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">初学</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">axios</a>
+                <a href="javascript:void(0)" class="js-tag color1">vue3.0优化分析</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Composition</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">vue3.0核心组件实现</a>
               </li>
             
             <div class="clearfix"></div>

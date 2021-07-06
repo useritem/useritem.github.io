@@ -6,21 +6,21 @@
   <meta name="renderer" content="webkit">
   <meta http-equiv="X-UA-Compatible" content="IE=edge" >
   <link rel="dns-prefetch" href="https://useritem.github.io">
-  <title>axios源码特殊功能深入 | hb的博客站</title>
+  <title>侦听器的实现及应用 | hb的博客站</title>
   <meta name="generator" content="hexo-theme-yilia-plus">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   
-  <meta name="description" content="axios拦截器与请求取消的模拟实现一、axios拦截器1、构造函数    function Axios(config){         this.config &#x3D; config;         this.interceptors &#x3D; {             request: new InterceptorManager(),             response: new Inter">
+  <meta name="description" content="前言：侦听器 – 为了观察数据的变化然后并执行一定的逻辑 vue2.x2.x的两种方法：watch选项与$watch API去创建（可进行创建与销毁） watch方法： export default {       watch: {          a(newVal, oldVal) {            console.log(&#39;new: %s,00 old: %s&#39;, newVal, o">
 <meta property="og:type" content="article">
-<meta property="og:title" content="axios源码特殊功能深入">
-<meta property="og:url" content="https://useritem.github.io/2021/06/19/axios%E6%BA%90%E7%A0%81%E7%89%B9%E6%AE%8A%E5%8A%9F%E8%83%BD%E6%B7%B1%E5%85%A5/index.html">
+<meta property="og:title" content="侦听器的实现及应用">
+<meta property="og:url" content="https://useritem.github.io/2021/07/06/vue3.0%E6%BA%90%E7%A0%81%E7%AE%80%E8%A6%81%E5%88%86%E6%9E%90/Composition%20API%E8%AE%BE%E8%AE%A1/%E4%BE%A6%E5%90%AC%E5%99%A8%E7%9A%84%E5%AE%9E%E7%8E%B0%E5%8F%8A%E5%BA%94%E7%94%A8/index.html">
 <meta property="og:site_name" content="hb的博客站">
-<meta property="og:description" content="axios拦截器与请求取消的模拟实现一、axios拦截器1、构造函数    function Axios(config){         this.config &#x3D; config;         this.interceptors &#x3D; {             request: new InterceptorManager(),             response: new Inter">
+<meta property="og:description" content="前言：侦听器 – 为了观察数据的变化然后并执行一定的逻辑 vue2.x2.x的两种方法：watch选项与$watch API去创建（可进行创建与销毁） watch方法： export default {       watch: {          a(newVal, oldVal) {            console.log(&#39;new: %s,00 old: %s&#39;, newVal, o">
 <meta property="og:locale" content="en_US">
-<meta property="article:published_time" content="2021-06-19T03:38:21.000Z">
-<meta property="article:modified_time" content="2021-06-19T03:39:33.595Z">
+<meta property="article:published_time" content="2021-07-06T14:17:30.000Z">
+<meta property="article:modified_time" content="2021-07-06T14:28:08.438Z">
 <meta property="article:author" content="〃不枉俗尘づ">
-<meta property="article:tag" content="axios">
+<meta property="article:tag" content="Composition">
 <meta name="twitter:card" content="summary">
   
     <link rel="alternative" href="/atom.xml" title="hb的博客站" type="application/atom+xml">
@@ -276,14 +276,14 @@
               class="anm-canvas"></canvas>
           </div>
           <div id="js-content" class="content-ll">
-            <article id="post-axios源码特殊功能深入" class="article article-type-post " itemscope itemprop="blogPost">
+            <article id="post-vue3.0源码简要分析/Composition API设计/侦听器的实现及应用" class="article article-type-post " itemscope itemprop="blogPost">
   <div class="article-inner">
     
       <header class="article-header">
   
   
     <h1 class="article-title" itemprop="name">
-      axios源码特殊功能深入
+      侦听器的实现及应用
     </h1>
   
 
@@ -295,8 +295,8 @@
               <i class="icon-smile icon"></i> 阅读数：<span id="busuanzi_value_page_pv"></span>次
         </span>
 
-<a href="/2021/06/19/axios%E6%BA%90%E7%A0%81%E7%89%B9%E6%AE%8A%E5%8A%9F%E8%83%BD%E6%B7%B1%E5%85%A5/" class="archive-article-date">
-        <time datetime="2021-06-19T03:38:21.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-06-19</time>
+<a href="/2021/07/06/vue3.0%E6%BA%90%E7%A0%81%E7%AE%80%E8%A6%81%E5%88%86%E6%9E%90/Composition%20API%E8%AE%BE%E8%AE%A1/%E4%BE%A6%E5%90%AC%E5%99%A8%E7%9A%84%E5%AE%9E%E7%8E%B0%E5%8F%8A%E5%BA%94%E7%94%A8/" class="archive-article-date">
+        <time datetime="2021-07-06T14:17:30.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-07-06</time>
 </a>
 
   
@@ -309,7 +309,7 @@
       <!-- 百度字体平台:http://fontstore.baidu.com/static/editor/index.html -->
       <i class="icon-statistics"></i>
       <span class="post-meta-item-text"> 字数统计:</span>
-      <span class="post-count">978字</span>
+      <span class="post-count">4k字</span>
     </span>
   </span>
 
@@ -318,7 +318,7 @@
     <span class="post-meta-item-icon">
       <i class="icon-book icon"></i>
       <span class="post-meta-item-text"> 阅读时长≈</span>
-      <span class="post-count">4分</span>
+      <span class="post-count">15分</span>
     </span>
   </span>
 </div>
@@ -331,150 +331,305 @@
     
     
     
-    <h1 id="axios拦截器与请求取消的模拟实现"><a href="#axios拦截器与请求取消的模拟实现" class="headerlink" title="axios拦截器与请求取消的模拟实现"></a>axios拦截器与请求取消的模拟实现</h1><h2 id="一、axios拦截器"><a href="#一、axios拦截器" class="headerlink" title="一、axios拦截器"></a>一、axios拦截器</h2><h3 id="1、构造函数"><a href="#1、构造函数" class="headerlink" title="1、构造函数"></a>1、构造函数</h3><pre><code>    function Axios(config){
-        this.config = config;
-        this.interceptors = {
-            request: new InterceptorManager(),
-            response: new InterceptorManager(),
-        }
-    }
+    <h2 id="前言："><a href="#前言：" class="headerlink" title="前言："></a>前言：</h2><p>侦听器 – 为了观察数据的变化然后并执行一定的逻辑</p>
+<h3 id="vue2-x"><a href="#vue2-x" class="headerlink" title="vue2.x"></a>vue2.x</h3><p>2.x的两种方法：watch选项与$watch API去创建（可进行创建与销毁）</p>
+<p>watch方法：</p>
+<pre><code>export default { 
+     watch: { 
+        a(newVal, oldVal) { 
+          console.log('new: %s,00 old: %s', newVal, oldVal) 
+    } 
+  } 
+} 
 </code></pre>
-<h3 id="2、顺利执行拦截器"><a href="#2、顺利执行拦截器" class="headerlink" title="2、顺利执行拦截器"></a>2、顺利执行拦截器</h3><pre><code>         //发送请求  难点与重点
-        Axios.prototype.request = function(config){
-            //创建一个 promise 对象
-            let promise = Promise.resolve(config);
-            //创建一个数组
-            const chains = [dispatchRequest, undefined];
-            //处理拦截器
-            //请求拦截器 将请求拦截器的回调 压入到 chains 的前面  request.handles = []
-            this.interceptors.request.handlers.forEach(item =&gt; {
-                chains.unshift(item.fulfilled, item.rejected);
-            });
-            //响应拦截器
-            this.interceptors.response.handlers.forEach(item =&gt; {
-                chains.push(item.fulfilled, item.rejected);
-                //请求拦截器在前面，响应拦截器在后面
-            });
+<p>$watch API方法：</p>
+<pre><code>const unwatch = vm.$watch('a', function(newVal, oldVal) { 
+      console.log('new: %s, old: %s', newVal, oldVal) 
+}) 
+</code></pre>
+<p>这个方法通过 $watch API 创建的侦听器 watcher 会返回一个 unwatch 函数，你可以随时执行它来停止这个 watcher 对数据的侦听，而对于 watch 选项创建的侦听器，它会随着组件的销毁而停止对数据的侦听。</p>
+<h1 id="一、watch-API-实现监听"><a href="#一、watch-API-实现监听" class="headerlink" title="一、watch API 实现监听"></a>一、watch API 实现监听</h1><h2 id="1、用法"><a href="#1、用法" class="headerlink" title="1、用法:"></a>1、用法:</h2><p>1 监听getter – 返回响应式对象 ，一旦响应式对象更新 — 就会返回对应回调函数。</p>
+<pre><code>import { reactive, watch } from 'vue' 
+const state = reactive({ count: 0 }) 
+watch(() =&gt; state.count, (count, prevCount) =&gt; { 
+      // 当 state.count 更新，会触发此回调函数 
+}) 
+</code></pre>
+<p>2.监听响应式对象 – 对象更新直接执行回调函数</p>
+<pre><code>import { ref, watch } from 'vue' 
+const count = ref(0) 
+watch(count, (count, prevCount) =&gt; { 
+      // 当 count.value 更新，会触发此回调函数 
+}) 
+</code></pre>
+<p>3.多个响应式对象（数组形式）  – 一个更新就执行回调</p>
+<pre><code>import { ref, watch } from 'vue' 
+const count = ref(0) 
+const count2 = ref(1) 
+watch([count, count2], ([count, count2], [prevCount, prevCount2]) =&gt; { 
+      // 当 count.value 或者 count2.value 更新，会触发此回调函数 
+}) 
+</code></pre>
+<h2 id="2、实现原理"><a href="#2、实现原理" class="headerlink" title="2、实现原理"></a>2、实现原理</h2><p>通过联想侦听器与副作用函数effect很像（当侦听的对象或者函数发生了变化则自动执行某个回调函数）， 所以想到其内部实现了effect，看源码发出现其内部主要就是实现了doWatch函数，而doWatch部分确实实现了effect。</p>
+<p>dowatch的具体行为 – <strong>五步走</strong></p>
+<pre><code>function doWatch(source, cb, { immediate, deep, flush, onTrack, onTrigger } = EMPTY_OBJ) { 
+  // 标准化 source 
+  // 构造 applyCb 回调函数 
+  // 创建 scheduler 时序执行函数 
+  // 创建 effect 副作用函数 
+  // 返回侦听器销毁函数 
+}   
+</code></pre>
+<p>具体分析：</p>
+<h2 id=""><a href="#" class="headerlink" title=""></a></h2><h3 id="1-标准化source-–-watch-函数的第一个参数"><a href="#1-标准化source-–-watch-函数的第一个参数" class="headerlink" title="1.标准化source  – watch 函数的第一个参数"></a>1.标准化source  – watch 函数的第一个参数</h3><p>它代表的是监听的<strong>目标是啥（即监听对象的处理）</strong> – 上面说的有三个，所以先应该进行标准化，即根据目标类型。标准成为<strong>getter函数</strong>。（三种情况）</p>
+<ul>
+<li><p>情况一：如果 source 是 ref 对象，则创建一个访问 source.value 的 getter 函数;</p>
+</li>
+<li><p>情况二 ：如果 source 是 reactive 对象，则创建一个访问 source 的 getter 函数，并设置 deep 为 true（deep 的作用我稍后会说）;</p>
+</li>
+<li><p>情况三：如果 source 是一个函数，则会进一步判断第二个参数 cb 是否存在，对于 watch API 来说，cb 是一定存在且是一个回调函数，这种情况下，getter 就是一个简单的对 source 函数封装的函数。</p>
+</li>
+</ul>
+<h4 id="产物getter分析"><a href="#产物getter分析" class="headerlink" title="产物getter分析"></a>产物getter分析</h4><p>getter函数 – 返回响应式对象，在创建effect runner函数时，被作为watcher求值的结果。</p><p style="color: red; font-size: 16px;font-weight: bolder;">每次执行 runner 就会把 getter 函数返回的响应式对象作为 watcher 求值的结果</p><p></p>
+<p>deep == true时 ，表示需要进行traverse 函数<strong>递归每一个value的子属性</strong>，</p>
+<p>注意deeper意思  -=– 表面含义是深度侦听，实际上是通过遍历对象的每一个子属性来实现，—-解决嵌套较深的问题</p>
+<p>例子：</p>
+<pre><code>import { reactive, watch } from 'vue' 
+const state = reactive({ 
+  count: { 
+        a: { 
+      b: 1 
+    } 
+  } 
+}) 
+watch(state.count, (count, prevCount) =&gt; { 
+console.log(count) 
+}) 
+state.count.a.b = 2  
+</code></pre>
+<p>前提：我们知道只有对象属性先被访问触发了依赖收集，再去修改这个属性，才可以通知对应的依赖更新。</p>
+<p>当我们执行 watch 函数的时候，我们知道如果侦听的是一个 reactive 对象，那么内部会设置 deep 为 true，然后执行 traverse 去递归访问对象深层子属性。。。</p>
+<h4 id="性能优化"><a href="#性能优化" class="headerlink" title="性能优化"></a>性能优化</h4><p>减少traverse 函数递归的性能损耗  —- 只监听getter函数</p>
+<pre><code>watch(() =&gt; state.count.a.b, (newVal, oldVal) =&gt; { 
+console.log(newVal) 
+}) 
+state.count.a.b = 2 
+</code></pre>
+<h2 id="-1"><a href="#-1" class="headerlink" title=""></a></h2><h3 id="2-构造回调函数-–-第二个参数-cb（功能实现）"><a href="#2-构造回调函数-–-第二个参数-cb（功能实现）" class="headerlink" title="2.构造回调函数 – 第二个参数 cb（功能实现）"></a>2.构造回调函数 – 第二个参数 cb（功能实现）</h3><p>cb函数参数 — 作用在于侦听一个值的变化，如果值变了就执行回调函数，回调函数里可以访问到新值和旧值。</p>
+<p>cb函数的三个参数 — 第一个 newValue 代表新值；第二个 oldValue 代表旧值。第三个参数 onInvalidate用于注册无效的回调函数。</p>
+<h4 id="构造回调函数的处理逻辑"><a href="#构造回调函数的处理逻辑" class="headerlink" title="构造回调函数的处理逻辑"></a>构造回调函数的处理逻辑</h4><p>主要需要注意的是两个函数，一个是onInvalidate – 注册无效回调函数</p>
+<p>另一个为applyCb  – 表示对cb的封装，*** 这个函数的实现就是“两步走”：</p>
+<ul>
+<li>1、执行runner函数求新值，实际上就是执行前面创建的 getter 函数求新值。</li>
+<li>2、判断，如果是 deep 的情况或者新旧值发生了变化，则执行回调函数 cb，传入参数 newValue 和 oldValue。</li>
+</ul>
+<h4 id="注意"><a href="#注意" class="headerlink" title="注意"></a>注意</h4><p>（1）watch API 和组件实例相关，因为通常我们会在组件的 setup 函数中使用它，当组件销毁后，回调函数 cb 不应该被执行而是直接返回.</p>
+<p>（2）第一次执行的时候旧值的初始值是空数组或者 undefined。执行完回调函数 cb 后，把旧值 oldValue 再更新为 newValue，这是为了下一次的比对</p>
+<h2 id="-2"><a href="#-2" class="headerlink" title=""></a></h2><h3 id="3-创建-scheduler-–-涉及到第三个参数"><a href="#3-创建-scheduler-–-涉及到第三个参数" class="headerlink" title="3.创建 scheduler – 涉及到第三个参数"></a>3.创建 scheduler – 涉及到第三个参数</h3><h4 id="1-scheduler作用"><a href="#1-scheduler作用" class="headerlink" title="1.scheduler作用"></a>1.scheduler作用</h4><p>scheduler 的作用是根据某种<strong>调度的方式</strong>去执行某种函数，在 watch API 中，主要影响到的是回调函数的执行方式。</p>
+<p>options参数表示了 — <strong>配置，决定了watcher的不同的行为</strong>  – 一般就是deeper，即可以对其进行主动设置，不用再要求传入的是 – source==reactive</p>
+<h4 id="2-scheduler的决定因素"><a href="#2-scheduler的决定因素" class="headerlink" title="2.scheduler的决定因素"></a>2.scheduler的决定因素</h4><p>scheduler 的创建逻辑受到了第三个参数 Options 中的 flush 属性值的影响，不同的 flush 决定了 watcher 的执行时机。 – flush的三种情况</p>
+<ul>
+<li><p>当 flush 为 sync 的时候，表示它是一个同步 watcher，即当数据变化时同步执行回调函数。</p>
+</li>
+<li><p>当 flush 为 pre 的时候，回调函数通过 queueJob 的方式在组件更新之前执行，如果组件还没挂载，则同步执行确保回调函数在组件挂载之前执行。</p>
+</li>
+<li><p>如果没设置 flush，那么回调函数通过 queuePostRenderEffect 的方式在组件更新之后执行。</p>
+</li>
+</ul>
+<p style="color: red; font-size: 16px;font-weight: bolder;">watcher 的回调函数是通过一定的调度方式执行的。</p>
 
-            //遍历，弹完之后chains没有元素了，所以不可等于0
-            while(chains.length &gt; 0){
-                promise = promise.then(chains.shift(), chains.shift());
-            }
-
-            return promise;
-        }
-    //发送请求
-    function dispatchRequest(config){
-        //返回一个promise 队形
-        return new Promise((resolve, reject) =&gt; {
-            resolve({
-                status: 200,
-                statusText: 'OK'
-            });
-        });
-    }
+<h2 id="-3"><a href="#-3" class="headerlink" title=""></a></h2><h3 id="4、创建effect-–-核心实现"><a href="#4、创建effect-–-核心实现" class="headerlink" title="4、创建effect  – 核心实现"></a>4、创建effect  – 核心实现</h3><p>前面的分析我们提到了 runner，它其实就是 watcher 内部创建的 effect 函数，–核心部分</p>
+<pre><code>const runner = effect(getter, { 
+      // 延时执行 
+  lazy: true, 
+      // computed effect 可以优先于普通的 effect 先运行，比如组件渲染的 effect 
+   computed: true, 
+  onTrack, 
+   onTrigger, 
+  scheduler: applyCb ? () =&gt; scheduler(applyCb) : scheduler 
+}) 
+    // 在组件实例中记录这个 effect 
+recordInstanceBoundEffect(runner) 
+    // 初次执行 
+if (applyCb) { 
+      if (immediate) { 
+    applyCb() 
+  } 
+  else { 
+    // 求旧值 
+oldValue = runner() 
+  } 
+    } 
+else { 
+      // 没有 cb 的情况 
+  runner() 
+} 
 </code></pre>
-<h3 id="3、拦截器管理构造函数"><a href="#3、拦截器管理构造函数" class="headerlink" title="3、拦截器管理构造函数"></a>3、拦截器管理构造函数</h3><pre><code>    function InterceptorManager(){
-        this.handlers = [];
-    }
-    InterceptorManager.prototype.use = function(fulfilled, rejected){
-        this.handlers.push({
-            fulfilled,
-            rejected
-        })
-    }
+<p>主要就是即通过 effect API 创建一个副作用函数 runner ，重要关注就是四大点</p>
+<ul>
+<li>1、runner 是一个 computed effect。（优先执行，即置 flush 为 pre 的时候，watcher 的执行可以优先于组件更新。）</li>
+<li>2、runner 执行的方式</li>
+<li>3、runner 的返回结果 (手动执行 runner 就相当于执行了前面标准化的 getter 函数)</li>
+<li>4、配置了 immediate 的情况</li>
+</ul>
+<h2 id="-4"><a href="#-4" class="headerlink" title=""></a></h2><h3 id="5-返回销毁函数-–-最后一步"><a href="#5-返回销毁函数-–-最后一步" class="headerlink" title="5.返回销毁函数  – 最后一步"></a>5.返回销毁函数  – 最后一步</h3><p>销毁函数内部会执行 stop 方法让 runner 失活，并清理 runner 的相关依赖，这样就可以停止对数据的侦听。并且，如果是在组件中注册的 watcher，也会移除组件 effects 对这个 runner 的引用。</p>
+<h3 id="内部总结"><a href="#内部总结" class="headerlink" title="内部总结"></a>内部总结</h3><p>我们可以侦听响应式数据的变化，内部创建 effect runner，首次执行 runner 做依赖收集，然后在数据发生变化后，以某种调度方式去执行回调函数。</p>
+<h1 id="二、异步"><a href="#二、异步" class="headerlink" title="二、异步"></a>二、异步</h1><p>分析第三步，由于回调函数以一中调度的方式执行的，特别是当 flush 不是 sync 时，它会把回调函数执行的任务推到一个异步队列中执行。，所以开始对异步进行分析</p>
+<h2 id="1、设计原因"><a href="#1、设计原因" class="headerlink" title="1、设计原因"></a>1、设计原因</h2><p>例子</p>
+<pre><code>import { reactive, watch } from 'vue' 
+const state = reactive({ count: 0 }) 
+watch(() =&gt; state.count, (count, prevCount) =&gt; { 
+      console.log(count) 
+}) 
+state.count++ 
+state.count++ 
+state.count++ 
 </code></pre>
-<p>原理在于当调用use函数时，就立即将函数fulfilled, rejected做成一个对象，并直接压入数组中</p>
-<h3 id="4、创建axios，并进行属性的添加"><a href="#4、创建axios，并进行属性的添加" class="headerlink" title="4、创建axios，并进行属性的添加"></a>4、创建axios，并进行属性的添加</h3><pre><code>    //创建实例
-    let context = new Axios({});
-    //创建axios函数
-    let axios = Axios.prototype.request.bind(context); //保证this的指向没问题
-    //将 context 属性 config interceptors 添加至 axios 函数对象身上
-    Object.keys(context).forEach(key =&gt; {
-        axios[key] = context[key];
-    });
+<p>解释：因为在一个 <strong>Tick（宏任务执行的生命周期）</strong>内，即使多次修改侦听的值，它的回调函数也只执行一次</p>
+<p>扩展：</p>
+<p>组件的更新过程是异步的，我们知道修改模板中引用的响应式对象的值时，会触发组件的重新渲染，但是在一个 Tick 内，即使你多次修改多个响应式对象的值，组件的重新渲染也<strong>只执行一次</strong>。这是因为如果每次更新数据都触发组件重新渲染，那么重新渲染的次数和代价都太高了。  – 节约渲染开销</p>
+<h2 id="2、创建"><a href="#2、创建" class="headerlink" title="2、创建"></a>2、创建</h2><p>通过前面的分析我们知道，在创建一个 watcher 时，如果配置 flush 为 pre 或不配置 flush ，那么 watcher 的回调函数就会异步执行。此时分别是通过 queueJob 和 queuePostRenderEffect （见上面第三步）把回调函数推入异步队列中的。</p>
+<p>在不涉及 suspense 的情况下，queuePostRenderEffect 相当于 queuePostFlushCb,</p>
+<pre><code>// 异步任务队列 
+const queue = [] 
+// 队列任务执行完后执行的回调函数队列 
+const postFlushCbs = [] 
+function queueJob(job) { 
+      if (!queue.includes(job)) { 
+    queue.push(job) 
+    queueFlush() 
+  } 
+    } 
+function queuePostFlushCb(cb) { 
+  if (!isArray(cb)) { 
+    postFlushCbs.push(cb) 
+  } 
+  else { 
+    // 如果是数组，把它拍平成一维 
+postFlushCbs.push(...cb) 
+  } 
+  queueFlush() 
+}
 </code></pre>
-<h2 id="二、axios取消请求的模拟实现"><a href="#二、axios取消请求的模拟实现" class="headerlink" title="二、axios取消请求的模拟实现"></a>二、axios取消请求的模拟实现</h2><h3 id="1、构造函数-1"><a href="#1、构造函数-1" class="headerlink" title="1、构造函数"></a>1、构造函数</h3><pre><code>    function Axios(config){
-        this.config = config;
-    }
+<p>实现就是两个维护， queue 数组和一个 postFlushCbs 数组，其中 queue 数组用作异步任务队列， postFlushCbs 数组用作异步任务队列执行完毕后的回调函数队列。且两个任务，第二个任务中有queueFlush 函数</p>
+<p>它的实现也是两个维护，两个函数，两个变量比较重要，主要用来控制异步任务的刷新逻辑 </p>
+<p>isFlushPending 用于判断是否在等待 nextTick 执行 flushJobs，而 isFlushing 是判断是否正在执行任务队列。</p>
+<h2 id="3、执行-–-进行异步执行队列"><a href="#3、执行-–-进行异步执行队列" class="headerlink" title="3、执行  – 进行异步执行队列"></a>3、执行  – 进行异步执行队列</h2><p>也就是flushJobs 函数开始执行</p>
+<p>主要就是先对queueFlush中从参数进行重新赋值，会把 isFlushPending 重置为 false，把 isFlushing 设置为 true 来表示正在执行异步任务队列。</p>
+<p>之后就是对queue进行从小到大的排序并遍历，之后执行flushPostFlushCbs 方法（遍历执行所有推入到 postFlushCbs 的回调函数）</p>
+<p>（执行在这个函数需要注意应该进行拷贝）</p>
+<p>最后遍历完 postFlushCbs 后，再对重置 isFlushing 为 false</p>
+<h3 id="排序的原因"><a href="#排序的原因" class="headerlink" title="排序的原因"></a>排序的原因</h3><ul>
+<li><p>（1）我们创建组件的过程是由父到子，所以创建组件副作用渲染函数也是先父后子，父组件的副作用渲染函数的 effect id 是小于子组件的，每次更新组件也是通过 queueJob 把 effect 推入异步任务队列 queue 中的。所以为了保证先更新父组再更新子组件，要对 queue 做从小到大的排序。</p>
+</li>
+<li><p>（2）如果一个组件在父组件更新过程中被卸载，它自身的更新应该被跳过。所以也应该要保证先更新父组件再更新子组件，要对 queue 做从小到大的排序。</p>
+</li>
+</ul>
+<h2 id="4、检测循环更新"><a href="#4、检测循环更新" class="headerlink" title="4、检测循环更新"></a>4、检测循环更新</h2><p>由于在遍历执行异步任务和回调函数的过程中，都会在非生产环境下执行 checkRecursiveUpdates 检测是否有循环更新</p>
+<h3 id="解决的问题："><a href="#解决的问题：" class="headerlink" title="解决的问题："></a>解决的问题：</h3><p>一旦watcher中进行了更新数据，即再一次<strong>进入回调函数</strong>，如果不控制，就凉凉–回调函数一直执行，直到内存耗尽造成浏览器假死。  （没办法侦听器本质就是数据变化–执行回调）</p>
+<h3 id="解决：-checkRecursiveUpdates-方法："><a href="#解决：-checkRecursiveUpdates-方法：" class="headerlink" title="解决： checkRecursiveUpdates 方法："></a>解决： checkRecursiveUpdates 方法：</h3><pre><code>const RECURSION_LIMIT = 100 
+function checkRecursiveUpdates(seen, fn) { 
+      if (!seen.has(fn)) { 
+    seen.set(fn, 1) 
+  } 
+else { 
+    const count = seen.get(fn) 
+if (count &gt; RECURSION_LIMIT) { 
+  throw new Error('Maximum recursive updates exceeded. ' + 
+    "You may have code that is mutating state in your component's " + 
+    'render function or updated hook or watcher source function.') 
+} 
+else { 
+  seen.set(fn, count + 1) 
+} 
+  } 
+} 
 </code></pre>
-<h3 id="2、原型-request-方法"><a href="#2、原型-request-方法" class="headerlink" title="2、原型 request 方法"></a>2、原型 request 方法</h3><pre><code>    Axios.prototype.request = function(config){
-        return dispatchRequest(config);
-    }
+<p>由于当异步函数flushJobs 一开始便创建了 seen（一个 Map 对象）</p>
+<p>在 checkRecursiveUpdates 的时候会把任务添加到 seen 中，记录引用计数 count，初始值为 1，如果 postFlushCbs 再次添加了<strong>相同的任务</strong>，则引用计数 count 加 1，如果 count 大于我们定义的限制 100 ，则说明一直在添加这个相同的任务并超过了 100 次。那么，Vue.js 会抛出这个错误   — 代表正常使用中不应该这样。 例子如下</p>
+<pre><code>import { reactive, watch } from 'vue' 
+const state = reactive({ count: 0 }) 
+watch(() =&gt; state.count, (count, prevCount) =&gt; { 
+      state.count++ 
+      console.log(count) 
+}) 
+state.count++ 
 </code></pre>
-<h3 id="3、dispatchRequest-函数"><a href="#3、dispatchRequest-函数" class="headerlink" title="3、dispatchRequest 函数"></a>3、dispatchRequest 函数</h3><pre><code>    function dispatchRequest(config){
-        return xhrAdapter(config);
-    }
+<p>如果你去跑这个示例，你会在控制台看到输出了 101 次值，然后报了错误： Maximum recursive updates exceeded 。</p>
+<h2 id="5、优化：只用一个变量-对于queueFlush-函数"><a href="#5、优化：只用一个变量-对于queueFlush-函数" class="headerlink" title="5、优化：只用一个变量  - 对于queueFlush 函数"></a>5、优化：只用一个变量  - 对于queueFlush 函数</h2><p>首先说明两个变量的作用：</p>
+<ul>
+<li><p>在一个 Tick（宏任务执行的生命周期） 内可以多次添加任务到队列中，但是任务队列会在 nextTick 后执行；</p>
+</li>
+<li><p>在执行任务队列的过程中，也可以添加新的任务到队列中，并且在当前 Tick 去执行剩余的任务队列。</p>
+</li>
+</ul>
+<p>优化 —仅用一个变量</p>
+<pre><code>function queueFlush() { 
+      if (!isFlushing) { 
+isFlushing = true 
+nextTick(flushJobs) 
+  } 
+} 
+function flushJobs(seen) { 
+      let job 
+  if ((process.env.NODE_ENV !== 'production')) { 
+    seen = seen || new Map() 
+  } 
+queue.sort((a, b) =&gt; getId(a) - getId(b)) 
+while ((job = queue.shift()) !== undefined) { 
+if (job === null) { 
+  continue 
+} 
+if ((process.env.NODE_ENV !== 'production')) { 
+  checkRecursiveUpdates(seen, job) 
+} 
+callWithErrorHandling(job, null, 14 /* SCHEDULER */) 
+  } 
+flushPostFlushCbs(seen) 
+if (queue.length || postFlushCbs.length) { 
+flushJobs(seen) 
+  } 
+isFlushing = false 
+} 
 </code></pre>
-<h3 id="4、xhrAdapter"><a href="#4、xhrAdapter" class="headerlink" title="4、xhrAdapter"></a>4、xhrAdapter</h3><pre><code>    function xhrAdapter(config){
-        //发送 AJAX 请求
-        return new Promise((resolve, reject) =&gt; {
-            //实例化对象
-            const xhr = new XMLHttpRequest();
-            //初始化
-            xhr.open(config.method, config.url);
-            //发送
-            xhr.send();
-            //处理结果
-            xhr.onreadystatechange = function(){
-                if(xhr.readyState === 4){
-                    //判断结果
-                    if(xhr.status &gt;= 200 &amp;&amp; xhr.status &lt; 300){
-                        //设置为成功的状态
-                        resolve({
-                            status: xhr.status,
-                            statusText: xhr.statusText
-                        });
-                    }else{
-                        reject(new Error('请求失败'));
-                    }
-                }
-            }
-            //关于取消请求的处理
-            if(config.cancelToken){
-                //对 cancelToken 对象身上的 promise 对象指定成功的回调
-                config.cancelToken.promise.then(value =&gt; {
-                    xhr.abort();
-                    //将整体结果设置为失败
-                    reject(new Error('请求已经被取消'))
-                });
-            }
-        })
-    }
+<p>可以看到，我们只需要一个 isFlushing 来控制就可以实现相同的功能了。在执行 queueFlush 的时候，判断 isFlushing 为 false，则把它设置为 true，然后 nextTick 会执行 flushJobs。在 flushJobs 函数执行完成的最后，也就是所有的任务（包括后添加的）都执行完毕，再设置 isFlushing 为 false。</p>
+<h1 id="三、扩展：watchEffect-API"><a href="#三、扩展：watchEffect-API" class="headerlink" title="三、扩展：watchEffect API"></a>三、扩展：watchEffect API</h1><p>watchEffect API 的作用是注册一个<strong>副作用函数</strong>，副作用函数内部可以访问到响应式对象，当内部响应式对象变化后再<strong>立即执行</strong>这个函数。</p>
+<pre><code>import { ref, watchEffect } from 'vue' 
+const count = ref(0) 
+watchEffect(() =&gt; console.log(count.value)) 
+count.value++ 
+//输出0 1
 </code></pre>
-<h3 id="5、创建-axios-函数"><a href="#5、创建-axios-函数" class="headerlink" title="5、创建 axios 函数"></a>5、创建 axios 函数</h3><pre><code>    const context = new Axios({});
-    const axios = Axios.prototype.request.bind(context);  //保证this指向没问题
+<h2 id="1、区分watch-API"><a href="#1、区分watch-API" class="headerlink" title="1、区分watch API"></a>1、区分watch API</h2><ul>
+<li><p>1.<strong>侦听的源不同</strong> 。watch API 可以侦听一个或多个响应式对象，也可以侦听一个 getter 函数，而 watchEffect API 侦听的是<strong>一个普通函数，只要内部访问了响应式对象即可，这个函数并不需要返回响应式对象</strong>。</p>
+</li>
+<li><p>2.<strong>没有回调函数</strong> 。watchEffect API 没有回调函数，副作用函数的内部响应式对象发生变化后，会再次执行这个副作用函数。</p>
+</li>
+<li><p>3.<strong>立即执行</strong> 。watchEffect API 在创建好 watcher 后，会立刻执行它的副作用函数，而 watch API 需要配置 immediate（创建effect，即runner函数时进行配置） 为 true，才会立即执行回调函数。</p>
+</li>
+</ul>
+<h2 id="2、onInvalidate-参数注册无效回调函数"><a href="#2、onInvalidate-参数注册无效回调函数" class="headerlink" title="2、onInvalidate 参数注册无效回调函数"></a>2、onInvalidate 参数注册无效回调函数</h2><p> onInvalidate 在 doWatch 中的实现：</p>
+<pre><code>const onInvalidate = (fn) =&gt; { 
+cleanup = runner.options.onStop = () =&gt; { 
+    callWithErrorHandling(fn, instance, 4 /* WATCH_CLEANUP */); 
+  }; 
+}; 
 </code></pre>
-<h3 id="6、CancelToken-构造函数"><a href="#6、CancelToken-构造函数" class="headerlink" title="6、CancelToken 构造函数"></a>6、CancelToken 构造函数</h3><pre><code>    function CancelToken(executor){
-        //声明一个变量
-        var resolvePromise;
-        //为实例对象添加属性
-        this.promise = new Promise((resolve) =&gt; {
-            //将 resolve 赋值给 resolvePromise
-            resolvePromise = resolve
-        });
-        //调用 executor 函数
-        executor(function(){
-            //执行 resolvePromise 函数
-            resolvePromise();
-        });
-    }
+<p>实际上，当你执行 onInvalidate 的时候，就是注册了一个 cleanup 和 runner 的 onStop 方法，这个方法内部会执行 fn，也就是你注册的无效回调函数。</p>
+<p>也就是说当响应式数据发生变化，会执行 cleanup 方法，当 watcher 被停止，会执行 onStop 方法，这两者都会执行注册的无效回调函数 fn。</p>
+<p>通过这种方式，Vue.js 就很好地实现了 watcher 注册无效回调函数的需求。</p>
+<h3 id="例子："><a href="#例子：" class="headerlink" title="例子："></a>例子：</h3><p>有些时候，watchEffect 会注册一个副作用函数，在函数内部可以做一些异步操作，但是当这个 watcher 停止后，如果我们想去对这个异步操作做一些额外事情（比如取消这个异步操作），我们可以通过 onInvalidate 参数注册一个无效函数。</p>
+<pre><code>import {ref, watchEffect } from 'vue' 
+const id = ref(0) 
+watchEffect(onInvalidate =&gt; { 
+  // 执行异步操作 
+  const token = performAsyncOperation(id.value) 
+  onInvalidate(() =&gt; { 
+    // 如果 id 发生变化或者 watcher 停止了，则执行逻辑取消前面的异步操作 
+    token.cancel() 
+      }) 
+}) 
 </code></pre>
-<p>原理：在cancelTaken身上维护了一个<strong>属性promise</strong>，并且之后吧可以改变其状态的变量resolvePromise变量暴露到了全局。</p>
-<p>于是cancel就成了调用的接口，当它使用时，内部resolvePromise就会执行，进而resolve执行改变promise状态为成功</p>
-<p>promise成功时，发送请求的回调就会执行，进而执行了abort函数</p>
-<h2 id="三、重点问题分析"><a href="#三、重点问题分析" class="headerlink" title="三、重点问题分析"></a>三、重点问题分析</h2><h3 id="1、axios-与Axios的关系"><a href="#1、axios-与Axios的关系" class="headerlink" title="1、axios 与Axios的关系?"></a>1、axios 与Axios的关系?</h3><p>1.从语法上来说: axios不是Axios 的实例</p>
-<p>2.从功能上来说: axios是Axios 的实例</p>
-<p>3.axios 是Axios.prototype.request 函数 bind()返回的函数</p>
-<p>4.axios 作为对象有Axios 原型对象上的所有方法，有Axios对象上所有属性</p>
-<p>通俗就是首先从结构来看，axios并不是由Axios实例化，得来的<br>axios来源的关键在于createInstance函数得来的<br>但是从功能上面来说axios具有Axios实例所有的功能</p>
-<h3 id="2、instance-与axios的区别"><a href="#2、instance-与axios的区别" class="headerlink" title="2、instance 与axios的区别?"></a>2、instance 与axios的区别?</h3><h4 id="1-相同"><a href="#1-相同" class="headerlink" title="1.相同:"></a>1.相同:</h4><p>(1)都是一个能发任意请求的函数: request(config)</p>
-<p>(2）都有发特定请求的各种方法: get()/post()/put()/delete()</p>
-<p>(3)都有默认配置和拦截器的属性: defaults/interceptors</p>
-<h4 id="2-不同"><a href="#2-不同" class="headerlink" title="2.不同:"></a>2.不同:</h4><p>(1)默认配置很可能不一样</p>
-<p>(2)instance没有axios后面添加的一些方法: create()/CancelToken()/all()</p>
-<p>可以理解为：</p>
-<p>两者开始是一样的,但是在用instance创建完axios之后,又对axios添加了一系列的属性与方法<br>而这些是instance不具有的,所以这是最大的不同</p>
 
     
 
@@ -521,7 +676,7 @@
         </li>
         <li>
           <strong>本文链接：</strong>
-          <a href="https://useritem.github.io/2021/06/19/axios源码特殊功能深入/" title="axios源码特殊功能深入" target="_blank">https://useritem.github.io/2021/06/19/axios源码特殊功能深入/</a>
+          <a href="https://useritem.github.io/2021/07/06/vue3.0源码简要分析/Composition API设计/侦听器的实现及应用/" title="侦听器的实现及应用" target="_blank">https://useritem.github.io/2021/07/06/vue3.0源码简要分析/Composition API设计/侦听器的实现及应用/</a>
         </li>
         
         <li>
@@ -543,7 +698,7 @@
 		<ul class="article-tag-list">
 			 
         		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">axios</a>
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">Composition</a>
         		</li>
       		
 		</ul>
@@ -555,7 +710,7 @@
 		<ul class="article-tag-list">
 			 
         		<li class="article-tag-list-item">
-        			<a href="/categories/js经典问题//" class="article-tag-list-link color2">js经典问题</a>
+        			<a href="/categories/vue3-0源码简析//" class="article-tag-list-link color1">vue3.0源码简析</a>
         		</li>
       		
 		</ul>
@@ -610,7 +765,7 @@
     <a class="close js-modal-close" href="javascript:;"><i class="icon icon-close"></i></a>
     <p>扫一扫，分享到微信</p>
     <div class="wx-qrcode">
-     <!-- <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQ4AAAEOCAAAAABd2qZ5AAAD9ElEQVR42u3aS27bQBAFQN3/0so2QETqve6h4QDFlWHRo5migWZ/Xq/4ev913X/675Xck1z3+7n6zeuJCwcOHDhwxEdNDrOB26yWECdY99A4cODAgeMUx9VWru6Jlr49ZHuk+z3Pgi4OHDhw4Pg9HO3mZkybh4EDBw4cOP4vjvtgdioJzA88e5w4cODAgeM5jqQMlyw9axTNWJPy34O1Uhw4cODA0VXw6uTqN//8yHwHDhw4cOAok6U2EM7uyQPzrDhYnA4HDhw4cKw58oD0XHludtT8wPW5cODAgQPHIY59SEu+rG0pbe4Ztqxw4MCBA8eaIxl3S+48ddRZWD07iocDBw4cOGYc95u4D11tAW4zYNemlHmI/VArxYEDBw4cC47NcEP7lW2pMUfZ/LyCwIEDBw4cQcNpOAQQJIFtIW+W1CUvCnVBEAcOHDhwlFMEbbktb/BsKDedoFnKhwMHDhw4znKcSrfacL4fs0vC8zCRw4EDBw4cJcd+ifZv85plEvgf+b/AgQMHDhwP9FlmrZ194MxTvk1xMJrvwIEDBw4cI442+OWf5uEwH547OwD35fHgwIEDB46T1bZiIGCW5uVB9BVf+UvAsH2FAwcOHDiCU8yGyTaFv3YE4bnBiA+7woEDBw4cD3MkKVZbpEvWT0JyXtYswjkOHDhw4FhzzBpOsw1tmljv4GrXL9pOOHDgwIEj/q5k6TwYJ62pWSDP07A8kH8pDuLAgQMHjhHHrNmzKQ7mZcF2VG5WfPyyQxw4cODAcZSjLfYdKMmNxinaRK7gw4EDBw4cJUe+3f1QQj6mMCsvtqndZUaLAwcOHDiOcuTlwk1jaTPoMAvVRdsJBw4cOHAsODYlv2G5LR5QaClnIfnyRDhw4MCBY3Sidiht345qk65Z82nYAMOBAwcOHIdmCdrQ2G4iLxruB+Da9PLDOjhw4MCBY8HRfvGsqdMS5Ini7FFFbSccOHDgwLHgaI+UHLgdZWhXy4uMRSMKBw4cOHCsOTZpVbL1U4MO+z204RwHDhw4cMw42oGA9s7Z+N0+oA6Lnjhw4MCB4xBHvol2lCFPqJLyXwKUvDpc7h8HDhw4cKw5ZqNmRV5Yhr32YeRlzWKEDgcOHDhwLDje5bVJydri4+xgsxeFIlPEgQMHDhyHrlmYzBOnooQXB/i86VVj4cCBAweOOIVrBwjaYLxJC2ehPR/Iw4EDBw4cZzlmzaS8mLgvDuZp5Kr4iAMHDhw4fpxjFt42uG0nbZWz4sCBAweOH+fYN6jaFfJHMhvLOPbegQMHDhw41oW8ttjXHnUTGYfjFzhw4MCBY82xGVDIl2vLeflIRPJp21TDgQMHDhwjjj8RlzWXUoovMgAAAABJRU5ErkJggg==" alt="微信分享二维码"> -->
+     <!-- <img src="data:image/png;base64,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" alt="微信分享二维码"> -->
     </div>
 </div>
 
@@ -625,9 +780,18 @@
 
 <nav id="article-nav">
   
+    <a href="/2021/07/06/vue3.0%E6%BA%90%E7%A0%81%E7%AE%80%E8%A6%81%E5%88%86%E6%9E%90/vue.js%E6%A0%B8%E5%BF%83%E7%BB%84%E4%BB%B6%E5%AE%9E%E7%8E%B0/%E7%BB%84%E4%BB%B6%E9%97%AE%E9%A2%98-%E7%BB%84%E4%BB%B6%E6%9B%B4%E6%96%B0/" id="article-nav-newer" class="article-nav-link-wrap">
+      <i class="icon-circle-left"></i>
+      <div class="article-nav-title">
+        
+          组件问题 - 组件更新
+        
+      </div>
+    </a>
   
-    <a href="/2021/06/19/axios%E6%BA%90%E7%A0%81%E5%9F%BA%E7%A1%80%E5%8A%9F%E8%83%BD%E6%B7%B1%E5%85%A5/" id="article-nav-older" class="article-nav-link-wrap">
-      <div class="article-nav-title">axios源码基础功能深入</div>
+  
+    <a href="/2021/07/06/vue3.0%E6%BA%90%E7%A0%81%E7%AE%80%E8%A6%81%E5%88%86%E6%9E%90/Composition%20API%E8%AE%BE%E8%AE%A1/%E4%BE%9D%E8%B5%96%E6%B3%A8%E5%85%A5%E5%88%86%E6%9E%90/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">依赖注入分析</div>
       <i class="icon-circle-right"></i>
     </a>
   
@@ -654,7 +818,7 @@
                 </span>
                 <span class="tooltip-content">
                     <div class="toc-article">
-                    <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#axios%E6%8B%A6%E6%88%AA%E5%99%A8%E4%B8%8E%E8%AF%B7%E6%B1%82%E5%8F%96%E6%B6%88%E7%9A%84%E6%A8%A1%E6%8B%9F%E5%AE%9E%E7%8E%B0"><span class="toc-number">1.</span> <span class="toc-text">axios拦截器与请求取消的模拟实现</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81axios%E6%8B%A6%E6%88%AA%E5%99%A8"><span class="toc-number">1.1.</span> <span class="toc-text">一、axios拦截器</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1%E3%80%81%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0"><span class="toc-number">1.1.1.</span> <span class="toc-text">1、构造函数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2%E3%80%81%E9%A1%BA%E5%88%A9%E6%89%A7%E8%A1%8C%E6%8B%A6%E6%88%AA%E5%99%A8"><span class="toc-number">1.1.2.</span> <span class="toc-text">2、顺利执行拦截器</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3%E3%80%81%E6%8B%A6%E6%88%AA%E5%99%A8%E7%AE%A1%E7%90%86%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0"><span class="toc-number">1.1.3.</span> <span class="toc-text">3、拦截器管理构造函数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4%E3%80%81%E5%88%9B%E5%BB%BAaxios%EF%BC%8C%E5%B9%B6%E8%BF%9B%E8%A1%8C%E5%B1%9E%E6%80%A7%E7%9A%84%E6%B7%BB%E5%8A%A0"><span class="toc-number">1.1.4.</span> <span class="toc-text">4、创建axios，并进行属性的添加</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81axios%E5%8F%96%E6%B6%88%E8%AF%B7%E6%B1%82%E7%9A%84%E6%A8%A1%E6%8B%9F%E5%AE%9E%E7%8E%B0"><span class="toc-number">1.2.</span> <span class="toc-text">二、axios取消请求的模拟实现</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1%E3%80%81%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0-1"><span class="toc-number">1.2.1.</span> <span class="toc-text">1、构造函数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2%E3%80%81%E5%8E%9F%E5%9E%8B-request-%E6%96%B9%E6%B3%95"><span class="toc-number">1.2.2.</span> <span class="toc-text">2、原型 request 方法</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3%E3%80%81dispatchRequest-%E5%87%BD%E6%95%B0"><span class="toc-number">1.2.3.</span> <span class="toc-text">3、dispatchRequest 函数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4%E3%80%81xhrAdapter"><span class="toc-number">1.2.4.</span> <span class="toc-text">4、xhrAdapter</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5%E3%80%81%E5%88%9B%E5%BB%BA-axios-%E5%87%BD%E6%95%B0"><span class="toc-number">1.2.5.</span> <span class="toc-text">5、创建 axios 函数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6%E3%80%81CancelToken-%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0"><span class="toc-number">1.2.6.</span> <span class="toc-text">6、CancelToken 构造函数</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E9%87%8D%E7%82%B9%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90"><span class="toc-number">1.3.</span> <span class="toc-text">三、重点问题分析</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1%E3%80%81axios-%E4%B8%8EAxios%E7%9A%84%E5%85%B3%E7%B3%BB"><span class="toc-number">1.3.1.</span> <span class="toc-text">1、axios 与Axios的关系?</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2%E3%80%81instance-%E4%B8%8Eaxios%E7%9A%84%E5%8C%BA%E5%88%AB"><span class="toc-number">1.3.2.</span> <span class="toc-text">2、instance 与axios的区别?</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#1-%E7%9B%B8%E5%90%8C"><span class="toc-number">1.3.2.1.</span> <span class="toc-text">1.相同:</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-%E4%B8%8D%E5%90%8C"><span class="toc-number">1.3.2.2.</span> <span class="toc-text">2.不同:</span></a></li></ol></li></ol></li></ol></li></ol>
+                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%89%8D%E8%A8%80%EF%BC%9A"><span class="toc-number">1.</span> <span class="toc-text">前言：</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#vue2-x"><span class="toc-number">1.1.</span> <span class="toc-text">vue2.x</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%80%E3%80%81watch-API-%E5%AE%9E%E7%8E%B0%E7%9B%91%E5%90%AC"><span class="toc-number"></span> <span class="toc-text">一、watch API 实现监听</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1%E3%80%81%E7%94%A8%E6%B3%95"><span class="toc-number">1.</span> <span class="toc-text">1、用法:</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2%E3%80%81%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86"><span class="toc-number">2.</span> <span class="toc-text">2、实现原理</span></a></li><li class="toc-item toc-level-2"><a class="toc-link"><span class="toc-number">3.</span> <span class="toc-text"></span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-%E6%A0%87%E5%87%86%E5%8C%96source-%E2%80%93-watch-%E5%87%BD%E6%95%B0%E7%9A%84%E7%AC%AC%E4%B8%80%E4%B8%AA%E5%8F%82%E6%95%B0"><span class="toc-number">3.1.</span> <span class="toc-text">1.标准化source  – watch 函数的第一个参数</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BA%A7%E7%89%A9getter%E5%88%86%E6%9E%90"><span class="toc-number">3.1.1.</span> <span class="toc-text">产物getter分析</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96"><span class="toc-number">3.1.2.</span> <span class="toc-text">性能优化</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#-1"><span class="toc-number">4.</span> <span class="toc-text"></span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2-%E6%9E%84%E9%80%A0%E5%9B%9E%E8%B0%83%E5%87%BD%E6%95%B0-%E2%80%93-%E7%AC%AC%E4%BA%8C%E4%B8%AA%E5%8F%82%E6%95%B0-cb%EF%BC%88%E5%8A%9F%E8%83%BD%E5%AE%9E%E7%8E%B0%EF%BC%89"><span class="toc-number">4.1.</span> <span class="toc-text">2.构造回调函数 – 第二个参数 cb（功能实现）</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%9E%84%E9%80%A0%E5%9B%9E%E8%B0%83%E5%87%BD%E6%95%B0%E7%9A%84%E5%A4%84%E7%90%86%E9%80%BB%E8%BE%91"><span class="toc-number">4.1.1.</span> <span class="toc-text">构造回调函数的处理逻辑</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%B3%A8%E6%84%8F"><span class="toc-number">4.1.2.</span> <span class="toc-text">注意</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#-2"><span class="toc-number">5.</span> <span class="toc-text"></span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#3-%E5%88%9B%E5%BB%BA-scheduler-%E2%80%93-%E6%B6%89%E5%8F%8A%E5%88%B0%E7%AC%AC%E4%B8%89%E4%B8%AA%E5%8F%82%E6%95%B0"><span class="toc-number">5.1.</span> <span class="toc-text">3.创建 scheduler – 涉及到第三个参数</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#1-scheduler%E4%BD%9C%E7%94%A8"><span class="toc-number">5.1.1.</span> <span class="toc-text">1.scheduler作用</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-scheduler%E7%9A%84%E5%86%B3%E5%AE%9A%E5%9B%A0%E7%B4%A0"><span class="toc-number">5.1.2.</span> <span class="toc-text">2.scheduler的决定因素</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#-3"><span class="toc-number">6.</span> <span class="toc-text"></span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#4%E3%80%81%E5%88%9B%E5%BB%BAeffect-%E2%80%93-%E6%A0%B8%E5%BF%83%E5%AE%9E%E7%8E%B0"><span class="toc-number">6.1.</span> <span class="toc-text">4、创建effect  – 核心实现</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#-4"><span class="toc-number">7.</span> <span class="toc-text"></span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#5-%E8%BF%94%E5%9B%9E%E9%94%80%E6%AF%81%E5%87%BD%E6%95%B0-%E2%80%93-%E6%9C%80%E5%90%8E%E4%B8%80%E6%AD%A5"><span class="toc-number">7.1.</span> <span class="toc-text">5.返回销毁函数  – 最后一步</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%86%85%E9%83%A8%E6%80%BB%E7%BB%93"><span class="toc-number">7.2.</span> <span class="toc-text">内部总结</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E5%BC%82%E6%AD%A5"><span class="toc-number"></span> <span class="toc-text">二、异步</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1%E3%80%81%E8%AE%BE%E8%AE%A1%E5%8E%9F%E5%9B%A0"><span class="toc-number">1.</span> <span class="toc-text">1、设计原因</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2%E3%80%81%E5%88%9B%E5%BB%BA"><span class="toc-number">2.</span> <span class="toc-text">2、创建</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3%E3%80%81%E6%89%A7%E8%A1%8C-%E2%80%93-%E8%BF%9B%E8%A1%8C%E5%BC%82%E6%AD%A5%E6%89%A7%E8%A1%8C%E9%98%9F%E5%88%97"><span class="toc-number">3.</span> <span class="toc-text">3、执行  – 进行异步执行队列</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%8E%92%E5%BA%8F%E7%9A%84%E5%8E%9F%E5%9B%A0"><span class="toc-number">3.1.</span> <span class="toc-text">排序的原因</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4%E3%80%81%E6%A3%80%E6%B5%8B%E5%BE%AA%E7%8E%AF%E6%9B%B4%E6%96%B0"><span class="toc-number">4.</span> <span class="toc-text">4、检测循环更新</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A7%A3%E5%86%B3%E7%9A%84%E9%97%AE%E9%A2%98%EF%BC%9A"><span class="toc-number">4.1.</span> <span class="toc-text">解决的问题：</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A7%A3%E5%86%B3%EF%BC%9A-checkRecursiveUpdates-%E6%96%B9%E6%B3%95%EF%BC%9A"><span class="toc-number">4.2.</span> <span class="toc-text">解决： checkRecursiveUpdates 方法：</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#5%E3%80%81%E4%BC%98%E5%8C%96%EF%BC%9A%E5%8F%AA%E7%94%A8%E4%B8%80%E4%B8%AA%E5%8F%98%E9%87%8F-%E5%AF%B9%E4%BA%8EqueueFlush-%E5%87%BD%E6%95%B0"><span class="toc-number">5.</span> <span class="toc-text">5、优化：只用一个变量  - 对于queueFlush 函数</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E6%89%A9%E5%B1%95%EF%BC%9AwatchEffect-API"><span class="toc-number"></span> <span class="toc-text">三、扩展：watchEffect API</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1%E3%80%81%E5%8C%BA%E5%88%86watch-API"><span class="toc-number">1.</span> <span class="toc-text">1、区分watch API</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2%E3%80%81onInvalidate-%E5%8F%82%E6%95%B0%E6%B3%A8%E5%86%8C%E6%97%A0%E6%95%88%E5%9B%9E%E8%B0%83%E5%87%BD%E6%95%B0"><span class="toc-number">2.</span> <span class="toc-text">2、onInvalidate 参数注册无效回调函数</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BE%8B%E5%AD%90%EF%BC%9A"><span class="toc-number">2.1.</span> <span class="toc-text">例子：</span></a></li></ol></li></ol>
                     </div>
                 </span>
             </div>
@@ -678,9 +842,9 @@
     <script src="/lib/giteement.browser.js"></script>
   
   <script>
-  <!-- id: "axios源码特殊功能深入" -->
+  <!-- id: "侦听器的实现及应用" -->
   var giteement = new Giteement({
-    id: '20210619113821',
+    id: '20210706221730',
     owner: '',
     repo: '',
     backcall_uri: '',
@@ -827,11 +991,23 @@
           <ul class="article-tag-list" q-show="showTags">
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">axios</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">初学</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">axios</a>
+                <a href="javascript:void(0)" class="js-tag color1">vue3.0优化分析</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Composition</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">vue3.0核心组件实现</a>
               </li>
             
             <div class="clearfix"></div>

@@ -285,6 +285,1596 @@
 
 
   
+    <article id="post-node与vue初学/第十二天日志" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+  
+  
+    <h1 itemprop="name">
+	
+	  <a class="article-title" href="/2021/03/30/node%E4%B8%8Evue%E5%88%9D%E5%AD%A6/%E7%AC%AC%E5%8D%81%E4%BA%8C%E5%A4%A9%E6%97%A5%E5%BF%97/" target="_blank">第十二天日志</a>
+  
+    </h1>
+  
+
+
+  
+  
+<a href="/2021/03/30/node%E4%B8%8Evue%E5%88%9D%E5%AD%A6/%E7%AC%AC%E5%8D%81%E4%BA%8C%E5%A4%A9%E6%97%A5%E5%BF%97/" class="archive-article-date">
+        <time datetime="2021-03-30T12:55:14.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-03-30</time>
+</a>
+
+  
+  
+    
+
+  
+  </header>
+  
+  <div class="article-entry" itemprop="articleBody">
+    
+    
+    
+    <h1 id="第十二天日志"><a href="#第十二天日志" class="headerlink" title="第十二天日志"></a>第十二天日志</h1><h2 id="一、web服务器"><a href="#一、web服务器" class="headerlink" title="一、web服务器"></a>一、web服务器</h2><h3 id="1-概述"><a href="#1-概述" class="headerlink" title="1.概述"></a>1.概述</h3><p>提供web信息浏览的web服务器，只需支持HTTP协议、HTML文档格式及URL，与客户端的网络浏览器配合。</p>
+<p>大多数web服务器支持的脚本语言：php、python、ruby。</p>
+<p>主流的三个web服务器：Apache、Nginx、IIS</p>
+<h3 id="2-Web应用架构"><a href="#2-Web应用架构" class="headerlink" title="2.Web应用架构"></a>2.Web应用架构</h3><p><a target="_blank" rel="noopener" href="https://imgchr.com/i/s24y5R"><img src="https://s3.ax1x.com/2021/01/19/s24y5R.png" alt="s24y5R.png"></a></p>
+<p>解释：</p>
+<p>Client： 主要为了方便用户向服务器，通过http请求数据</p>
+<p>Server:代表接收方与响应方，相当于中转站。</p>
+<p>Business 业务层通过web服务器进行用户想要的处理</p>
+<p>Data：对数据库进行操作，（找数据）</p>
+<h3 id="3-web服务器的构建"><a href="#3-web服务器的构建" class="headerlink" title="3.web服务器的构建"></a>3.<strong>web服务器</strong>的构建</h3><p>通过<strong>http模块</strong>进行 http服务端以及客户端的调用。</p>
+<p>以建立最基本的http服务器框架为例</p>
+<pre><code>var http = require('http');
+var fs   = require('fs');
+var url  = require('url');
+http.createServer( function (req,res) { //一个请求，一个回应
+
+// 解析请求，包括文件名
+   var pathname = url.parse(req.url).pathname;
+
+   // 输出请求的文件名
+   console.log("Request for " + pathname + " received.");
+  //从文件系统进行请求文件的相关读取
+
+  fs.readFile(pathname.substr(1),function(err,data){ //将文件内容写入缓存区，第一个表示文件名
+      // substr() 从字符串中提取一些字符
+
+  if(err){      //表示报错
+      console.log(err);
+       // HTTP 状态码: 404 : NOT FOUND
+     // Content Type: text/html
+
+    res.writeHead(404,{'Content-Type':'text/html'});
+  }else{
+
+    // HTTP 状态码: 200 : OK
+    // Content Type: text/html
+     res.writeHead(200, {'Content-Type': 'text/html'});    
+     
+     // 响应文件内容
+     res.write(data.toString());  
+  }
+  //发送相应数据
+  res.end()
+  });
+}).listen(8080)    //表示http服务器架构端口为8080
+console.log('Server running at http://127.0.0.1:8080/')
+</code></pre>
+<p>之后在浏览器中点开地址就可以了：</p>
+<p>接着我们在浏览器中打开地址：<a target="_blank" rel="noopener" href="http://127.0.0.1:8080/index.html">http://127.0.0.1:8080/index.html</a></p>
+<h3 id="4-node建立web客户端"><a href="#4-node建立web客户端" class="headerlink" title="4.node建立web客户端"></a>4.node建立web客户端</h3><pre><code>var http = require('http');
+
+// 用于请求的选项
+var options = {
+   host: 'localhost',
+   port: '8080',
+   path: '/index.html'  
+};
+
+// 处理响应的回调函数
+    var callback = function(response){
+   // 不断更新数据
+   var body = '';
+   response.on('data', function(data) {
+  body += data;
+   });
+   
+   response.on('end', function() {
+      // 数据接收完成
+      console.log(body);
+   });
+}
+// 向服务端发送请求
+var req = http.request(options, callback);
+req.end();
+</code></pre>
+<h4 id="注意"><a href="#注意" class="headerlink" title="注意"></a>注意</h4><p>在运行此文件时，要保证对应web服务器处于打开的状态<br>例如：<br><a target="_blank" rel="noopener" href="https://imgchr.com/i/s2OKFU"><img src="https://s3.ax1x.com/2021/01/19/s2OKFU.png" alt="s2OKFU.png"></a></p>
+<p>左边为客户端，右边为服务端，右边的Request for /index.html received.表示</p>
+<p>用户请求信息。</p>
+<p>##特别：ctrl + c 可以快速推出node操作。</p>
+<h2 id="二、Vue中Class与Style的绑定"><a href="#二、Vue中Class与Style的绑定" class="headerlink" title="二、Vue中Class与Style的绑定"></a>二、Vue中Class与Style的绑定</h2><h3 id="1-前提"><a href="#1-前提" class="headerlink" title="1.前提"></a>1.前提</h3><p>Vue.js对于v-bind针对class与style的操作做了增强：表达式结果的类型除了字符串之外，还可以是对象或数组。</p>
+<p>（v-bind是用于绑定一个或多个属性值，或者像一个组件创建props值，）</p>
+<h3 id="2-绑定HTML-class（对象）"><a href="#2-绑定HTML-class（对象）" class="headerlink" title="2.绑定HTML class（对象）"></a>2.绑定HTML class（对象）</h3><h4 id="进行动态切换对象为class："><a href="#进行动态切换对象为class：" class="headerlink" title="进行动态切换对象为class："></a>进行动态切换对象为class：</h4><pre><code>&lt;div&gt;
+  class="static"
+  v-bind:class="{ active: isActive, 'text-danger': hasError }"
+&lt;/div&gt;
+</code></pre>
+<p>v-bind也可以与普通的class共存</p>
+<p>这里的active或者text-danger发生变化时，会更新class列表</p>
+<p>当然这里的绑定也可以进行返回对象的计算属性的绑定，例如：</p>
+<pre><code>&lt;div v-bind:class="classObject"&gt;&lt;/div&gt;
+data: {
+  isActive: true,
+  error: null
+},
+computed: {
+  classObject: function () {
+return {
+  active: this.isActive &amp;&amp; !this.error,
+  'text-danger': this.error &amp;&amp; this.error.type === 'fatal'
+    }
+  }
+}
+</code></pre>
+<h3 id="3-绑定HTML-class（数组）"><a href="#3-绑定HTML-class（数组）" class="headerlink" title="3.绑定HTML class（数组）"></a>3.绑定HTML class（数组）</h3><p>传数组的方式如下：</p>
+<pre><code>&lt;div v-bind:class="[activeClass, errorClass]"&gt;&lt;/div&gt;
+data: {
+  activeClass: 'active',
+  errorClass: 'text-danger'
+}
+</code></pre>
+<p>渲染结果为：</p>
+<pre><code>&lt;div class="active text-danger"&gt;&lt;/div&gt;
+</code></pre>
+<p>当然，也可以进行三元表达式：</p>
+<pre><code>&lt;div v-bind:class="[isActive ? activeClass : '', errorClass]"&gt;&lt;/div&gt;
+</code></pre>
+<p>或者数组中加入对象：</p>
+<pre><code>&lt;div v-bind:class="[{ active: isActive }, errorClass]"&gt;&lt;/div&gt;
+</code></pre>
+<h3 id="4-对象语法"><a href="#4-对象语法" class="headerlink" title="4.对象语法"></a>4.对象语法</h3><p>v-bind:style 的对象语法十分直观——看着非常像 CSS，但其实是一个 JavaScript 对象。CSS property 名可以用驼峰式 (camelCase) 或短横线分隔 (kebab-case，记得用引号括起来) 来命名：</p>
+<p>使代码清晰：</p>
+<pre><code>&lt;div v-bind:style="{ color: activeColor, fontSize: fontSize + 'px' }"&gt;&lt;/div&gt;
+data: {
+  activeColor: 'red',
+  fontSize: 30
+}
+</code></pre>
+<h3 id="5-多重值"><a href="#5-多重值" class="headerlink" title="5.多重值"></a>5.多重值</h3><p>为了保证浏览器可以正常使用，所以可以为 style 绑定中的 property 提供一个包含多个值的数组，常用于提供多个带前缀的值，例如：</p>
+<pre><code>&lt;div :style="{ display: ['-webkit-box', '-ms-flexbox', 'flex'] }"&gt;&lt;/div&gt;
+</code></pre>
+<p>这样写只会渲染数组中最后一个被浏览器支持的值。</p>
+<p>在本例中，如果浏览器支持不带浏览器前缀的 flexbox，那么就只会渲染 display: flex。</p>
+
+    
+
+    
+
+    
+
+  </div>
+  <div class="article-info article-info-index">
+    
+    
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">初学</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+    
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/node与vue初学//" class="article-tag-list-link color1">node与vue初学</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+
+    
+    <p class="article-more-link">
+      <a class="article-more-a" href="/2021/03/30/node%E4%B8%8Evue%E5%88%9D%E5%AD%A6/%E7%AC%AC%E5%8D%81%E4%BA%8C%E5%A4%A9%E6%97%A5%E5%BF%97/">展开全文 >></a>
+    </p>
+    
+
+    
+    <div class="clearfix"></div>
+  </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+    <article id="post-node与vue初学/第十一天日志" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+  
+  
+    <h1 itemprop="name">
+	
+	  <a class="article-title" href="/2021/03/30/node%E4%B8%8Evue%E5%88%9D%E5%AD%A6/%E7%AC%AC%E5%8D%81%E4%B8%80%E5%A4%A9%E6%97%A5%E5%BF%97/" target="_blank">第十一天日志</a>
+  
+    </h1>
+  
+
+
+  
+  
+<a href="/2021/03/30/node%E4%B8%8Evue%E5%88%9D%E5%AD%A6/%E7%AC%AC%E5%8D%81%E4%B8%80%E5%A4%A9%E6%97%A5%E5%BF%97/" class="archive-article-date">
+        <time datetime="2021-03-30T12:54:58.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-03-30</time>
+</a>
+
+  
+  
+    
+
+  
+  </header>
+  
+  <div class="article-entry" itemprop="articleBody">
+    
+    
+    
+    <h1 id="第十一天日志"><a href="#第十一天日志" class="headerlink" title="第十一天日志"></a>第十一天日志</h1><h2 id="一、计算属性"><a href="#一、计算属性" class="headerlink" title="一、计算属性"></a>一、计算属性</h2><h3 id="1-引入目的"><a href="#1-引入目的" class="headerlink" title="1.引入目的"></a>1.引入目的</h3><p>由于模板内表达式，一般仅用于简单运算，对于复杂逻辑，如：</p>
+<pre><code>&lt;div id="example"&gt;
+  {{ message.split('').reverse().join('') }}
+&lt;/div&gt;
+</code></pre>
+<p>这里表示显示变量message的翻转字符串，当涉及到多处包含时，会难以处理</p>
+<p>所以 **复杂逻辑 ** — 计算属性</p>
+<h3 id="2-样例及引入"><a href="#2-样例及引入" class="headerlink" title="2.样例及引入"></a>2.样例及引入</h3><pre><code> &lt;p&gt;Reversed message: "{{ reversedMessage() }}"&lt;/p&gt;
+// 在组件中
+methods: {
+  reversedMessage: function () {
+return this.message.split('').reverse().join('')
+  }
+}
+</code></pre>
+<p>定义为属性时，计算属性时基于它的响应式依赖进行缓存的，只有相应式依赖发生改变时，才会重新求值，所以只要message没有改变，多次访问reversedmessage会立刻返回一样的结果。</p>
+<h3 id="3-计算属性与监听属性的对比"><a href="#3-计算属性与监听属性的对比" class="headerlink" title="3.计算属性与监听属性的对比"></a>3.计算属性与监听属性的对比</h3><p>监听属性：watch函数的回调作用</p>
+<p>样例：</p>
+<pre><code>&lt;div id="demo"&gt;{{ fullName }}&lt;/div&gt;
+</code></pre>
+<p>监听属性：（代码命令较为重复）</p>
+<pre><code>var vm = new Vue({
+  el: '#demo',
+  data: {
+firstName: 'Foo',
+lastName: 'Bar',
+fullName: 'Foo Bar'
+  },
+  watch: {
+firstName: function (val) {
+  this.fullName = val + ' ' + this.lastName
+},
+lastName: function (val) {
+  this.fullName = this.firstName + ' ' + val
+}
+  }
+})
+</code></pre>
+<p>计算属性：</p>
+<pre><code>var vm = new Vue({
+  el: '#demo',
+  data: {
+firstName: 'Foo',
+lastName: 'Bar'
+  },
+  computed: {                         //fullname表示声明的计算属性
+fullName: function () {
+  return this.firstName + ' ' + this.lastName
+}
+  }
+})
+</code></pre>
+<h3 id="4-监听函数"><a href="#4-监听函数" class="headerlink" title="4.监听函数"></a>4.监听函数</h3><pre><code>&lt;div id="watch-example"&gt;
+  &lt;p&gt;
+    Ask a yes/no question:
+    &lt;input v-model="question"&gt;
+  &lt;/p&gt;
+  &lt;p&gt;{{ answer }}&lt;/p&gt;
+&lt;/div&gt;
+</code></pre>
+<p>JS</p>
+<pre><code>&lt;!-- 因为 AJAX 库和通用工具的生态已经相当丰富，Vue 核心代码没有重复 --&gt;
+&lt;!-- 提供这些功能以保持精简。这也可以让你自由选择自己更熟悉的工具。 --&gt;
+&lt;script src="https://cdn.jsdelivr.net/npm/axios@0.12.0/dist/axios.min.js"&gt;&lt;/script&gt;
+&lt;script src="https://cdn.jsdelivr.net/npm/lodash@4.13.1/lodash.min.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+var watchExampleVM = new Vue({
+  el: '#watch-example',
+  data: {
+question: '',
+answer: 'I cannot give you an answer until you ask a question!'
+  },
+  watch: {
+// 如果 `question` 发生改变，这个函数就会运行
+question: function (newQuestion, oldQuestion) {
+  this.answer = 'Waiting for you to stop typing...'
+  this.debouncedGetAnswer()
+}
+  },
+  created: function () {
+// `_.debounce` 是一个通过 Lodash 限制操作频率的函数。
+// 在这个例子中，我们希望限制访问 yesno.wtf/api 的频率
+// AJAX 请求直到用户输入完毕才会发出。想要了解更多关于
+// `_.debounce` 函数 (及其近亲 `_.throttle`) 的知识，
+// 请参考：https://lodash.com/docs#debounce
+this.debouncedGetAnswer = _.debounce(this.getAnswer, 500)
+  },
+  methods: {
+getAnswer: function () {
+  if (this.question.indexOf('?') === -1) {
+    this.answer = 'Questions usually contain a question mark. ;-)'
+    return
+  }
+  this.answer = 'Thinking...'
+  var vm = this
+  axios.get('https://yesno.wtf/api')
+    .then(function (response) {
+      vm.answer = _.capitalize(response.data.answer)
+    })
+    .catch(function (error) {
+      vm.answer = 'Error! Could not reach the API. ' + error
+    })
+}
+  }
+})
+&lt;/script&gt;
+</code></pre>
+<p>在这个示例中，使用 watch 选项允许我们执行异步操作 (访问一个 API)，限制我们执行该操作的频率，并在我们得到最终结果前，设置中间状态(指的是文本框内数据的变化中的状态)。这些都是计算属性无法做到的。</p>
+
+    
+
+    
+
+    
+
+  </div>
+  <div class="article-info article-info-index">
+    
+    
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">初学</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+    
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/node与vue初学//" class="article-tag-list-link color1">node与vue初学</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+
+    
+    <p class="article-more-link">
+      <a class="article-more-a" href="/2021/03/30/node%E4%B8%8Evue%E5%88%9D%E5%AD%A6/%E7%AC%AC%E5%8D%81%E4%B8%80%E5%A4%A9%E6%97%A5%E5%BF%97/">展开全文 >></a>
+    </p>
+    
+
+    
+    <div class="clearfix"></div>
+  </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+    <article id="post-node与vue初学/第十天日志" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+  
+  
+    <h1 itemprop="name">
+	
+	  <a class="article-title" href="/2021/03/30/node%E4%B8%8Evue%E5%88%9D%E5%AD%A6/%E7%AC%AC%E5%8D%81%E5%A4%A9%E6%97%A5%E5%BF%97/" target="_blank">第十天日志</a>
+  
+    </h1>
+  
+
+
+  
+  
+<a href="/2021/03/30/node%E4%B8%8Evue%E5%88%9D%E5%AD%A6/%E7%AC%AC%E5%8D%81%E5%A4%A9%E6%97%A5%E5%BF%97/" class="archive-article-date">
+        <time datetime="2021-03-30T12:54:44.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-03-30</time>
+</a>
+
+  
+  
+    
+
+  
+  </header>
+  
+  <div class="article-entry" itemprop="articleBody">
+    
+    
+    
+    <h1 id="第十天日志"><a href="#第十天日志" class="headerlink" title="第十天日志"></a>第十天日志</h1><h2 id="一、node中get与post请求处理"><a href="#一、node中get与post请求处理" class="headerlink" title="一、node中get与post请求处理"></a>一、node中get与post请求处理</h2><h4 id="概述：实现用户对服务器的提交，例如表单提交一般用get-post请求"><a href="#概述：实现用户对服务器的提交，例如表单提交一般用get-post请求" class="headerlink" title="概述：实现用户对服务器的提交，例如表单提交一般用get/post请求"></a>概述：实现用户对服务器的提交，例如表单提交一般用get/post请求</h4><h3 id="1-获取get请求"><a href="#1-获取get请求" class="headerlink" title="1.获取get请求"></a>1.获取get请求</h3><p>由于get请求直接被封装再路径之中，所以在url完整的路径中，可以手动解析后面的内容作为get请求的参数，如<strong>parse</strong>函数</p>
+<pre><code>var http =require('http') // 构建http server服务
+
+var url = require('url')
+var util = require('util')
+
+ //获得util模块，主要针对字符串与对象的操作，或者对输出流的同步写入以及对象的增强等，函数：
+ //1.format接受一个格式化字符串作为第一个参数，并返回一个格式化后的字符串
+ //（格式化字符串的意bai思是使du用Format函数将指定的字符串转换为想要的输出格式。）
+ //参考：  https://blog.csdn.net/qq_39263663/article/details/80375427
+//当有比占位符更多的参数时，多余的参数被转换为字符串，然后用空格分隔符连接起来。例如 util.format('%s=%s','item1','item2','item3');    //'item1 = item2 item3'
+//stdout, stdin, stderr的中文名字分别是标准输出，标准输入和标准错误。
+
+http.createServer(function(req,res){
+res.writeHead(200,{'Content-Type':'text/plain;charset = utf-8'});
+res.end(util.inspect(url.parse(req.url,ture)))
+}).listen(3000);
+</code></pre>
+<h3 id="2-post请求"><a href="#2-post请求" class="headerlink" title="2.post请求"></a>2.post请求</h3><p>由于post请求会消耗大量时间与资源，所以nodejs默认不会解析请求体，需要时手动</p>
+<pre><code>    var http = require('http');
+var querystring = require('querystring');
+    var util = require('util');
+
+http.createServer(function(req, res){
+// 定义了一个post变量，用于暂存请求体的信息
+var post = '';     
+
+// 通过req的data事件监听函数，每当接受到请求体的数据，就累加到post变量中
+req.on('data', function(chunk){    
+    post += chunk;
+});
+
+// 在end事件触发后，通过querystring.parse将post解析为真正的POST请求格式，然后向客户端返回。
+req.on('end', function(){    
+    post = querystring.parse(post);
+    res.end(util.inspect(post));
+});
+ }).listen(3000);
+</code></pre>
+<p><strong>这里的listen函数限制了，只要是本地的locallhoust（代表本地）：3000，后面的路径任意</strong></p>
+<h3 id="http-createServer方法使用"><a href="#http-createServer方法使用" class="headerlink" title="http.createServer方法使用"></a>http.createServer方法使用</h3><p>，自动添加到 request 事件（request模块想象成一个简化版的第三方类http模块，同时支持https 和重定向），函数传递两个参数：</p>
+<p>req 请求对象，想知道req有哪些属性，可以查看 “http.request 属性整合”。</p>
+<p>res 响应对象 ，收到请求后要做出的响应。想知道res有哪些属性，可以查看 “http.response属性整合”。</p>
+<p>res定义了相应内容，为nodejs并且以end结束，最后listen函数为监听3000端口</p>
+<h2 id="二、nodejs工作模块"><a href="#二、nodejs工作模块" class="headerlink" title="二、nodejs工作模块"></a>二、nodejs工作模块</h2><p><a target="_blank" rel="noopener" href="https://imgchr.com/i/syfDJS"><img src="https://s3.ax1x.com/2021/01/18/syfDJS.png" alt="syfDJS.png"></a></p>
+
+    
+
+    
+
+    
+
+  </div>
+  <div class="article-info article-info-index">
+    
+    
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">初学</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+    
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/node与vue初学//" class="article-tag-list-link color1">node与vue初学</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+
+    
+    <p class="article-more-link">
+      <a class="article-more-a" href="/2021/03/30/node%E4%B8%8Evue%E5%88%9D%E5%AD%A6/%E7%AC%AC%E5%8D%81%E5%A4%A9%E6%97%A5%E5%BF%97/">展开全文 >></a>
+    </p>
+    
+
+    
+    <div class="clearfix"></div>
+  </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+    <article id="post-node与vue初学/第九天日志" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+  
+  
+    <h1 itemprop="name">
+	
+	  <a class="article-title" href="/2021/03/30/node%E4%B8%8Evue%E5%88%9D%E5%AD%A6/%E7%AC%AC%E4%B9%9D%E5%A4%A9%E6%97%A5%E5%BF%97/" target="_blank">第九天日志</a>
+  
+    </h1>
+  
+
+
+  
+  
+<a href="/2021/03/30/node%E4%B8%8Evue%E5%88%9D%E5%AD%A6/%E7%AC%AC%E4%B9%9D%E5%A4%A9%E6%97%A5%E5%BF%97/" class="archive-article-date">
+        <time datetime="2021-03-30T12:54:16.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-03-30</time>
+</a>
+
+  
+  
+    
+
+  
+  </header>
+  
+  <div class="article-entry" itemprop="articleBody">
+    
+    
+    
+    <h1 id="第九天日志"><a href="#第九天日志" class="headerlink" title="第九天日志"></a>第九天日志</h1><h2 id="一、知识点补充"><a href="#一、知识点补充" class="headerlink" title="一、知识点补充"></a>一、知识点补充</h2><h3 id="1-JS中的常见定义类型"><a href="#1-JS中的常见定义类型" class="headerlink" title="1.JS中的常见定义类型"></a>1.JS中的常见定义类型</h3><h4 id="（1）const"><a href="#（1）const" class="headerlink" title="（1）const"></a>（1）const</h4><p>const定义的变量不可以修改，而且必须初始化。</p>
+<pre><code> const b = 2;//正确
+ // const b;//错误，必须初始化 
+ console.log('函数外const定义b：' + b);//有输出值
+ // b = 5;
+ // console.log('函数外修改const定义b：' + b);//无法输出 
+</code></pre>
+<h4 id="（2）var"><a href="#（2）var" class="headerlink" title="（2）var"></a>（2）var</h4><h4 id="（3）let"><a href="#（3）let" class="headerlink" title="（3）let"></a>（3）let</h4><p>let是块级作用域，函数内部使用let定义后，对函数外部无影响。</p>
+<pre><code>let c = 3;
+console.log('函数外let定义c：' + c);//输出c=3
+ function change(){
+let c = 6;
+ console.log('函数内let定义c：' + c);//输出c=6
+} 
+ change();
+ console.log('函数调用后let定义c不受函数内部定义影响：' + c);//输出c=3
+</code></pre>
+<h3 id="2-箭头函数（函数简化表示）"><a href="#2-箭头函数（函数简化表示）" class="headerlink" title="2.箭头函数（函数简化表示）"></a>2.箭头函数（函数简化表示）</h3><p>例·：</p>
+<pre><code>x =&gt; x * x
+</code></pre>
+<p>上面的箭头函数相当于：</p>
+<pre><code>function (x) {
+return x * x;
+}
+</code></pre>
+<p>箭头函数相当于对匿名函数的简写，当然上面的还简化了return与{}；</p>
+<pre><code>// 两个参数:
+(x, y) =&gt; x * x + y * y
+
+/ 无参数:
+() =&gt; 3.14
+
+//比较复杂
+x =&gt; {
+if (x &gt; 0) {
+    return x * x;
+}
+else {
+    return - x * x;
+}
+}
+</code></pre>
+<h3 id="3-解决异步操作"><a href="#3-解决异步操作" class="headerlink" title="3.解决异步操作"></a>3.解决异步操作</h3><p>解决异步操作的方案 Promise 、Generator、async</p>
+<p>学习网站：</p>
+<p><a target="_blank" rel="noopener" href="https://www.cnblogs.com/rogerwu/p/10784236.html">https://www.cnblogs.com/rogerwu/p/10784236.html</a></p>
+<h3 id="4-Iterator接口"><a href="#4-Iterator接口" class="headerlink" title="4. Iterator接口"></a>4. Iterator接口</h3><p> 为不同类型的数据提供统一的访问机制</p>
+<p><a target="_blank" rel="noopener" href="https://blog.csdn.net/weixin_40876986/article/details/102873228">https://blog.csdn.net/weixin_40876986/article/details/102873228</a></p>
+<h2 id="二、util核心模块"><a href="#二、util核心模块" class="headerlink" title="二、util核心模块"></a>二、util核心模块</h2><p>util 是一个Node.js 核心模块，提供常用函数的集合。</p>
+<h3 id="1-util-callbackify-original"><a href="#1-util-callbackify-original" class="headerlink" title="1.util.callbackify(original)"></a>1.util.callbackify(original)</h3><h3 id="2-util-inherits"><a href="#2-util-inherits" class="headerlink" title="2.util.inherits"></a>2.util.inherits</h3><p>作用：实现对象间原型继承的函数</p>
+<p>原因：JavaScript 的面向对象特性是基于原型的，与常见的基于类的不同。JavaScript 没有提供对象继承的语言级别特性，而是通过原型复制来实现的。</p>
+<p>例子：</p>
+<pre><code>var util = require('util'); 
+function Base() { 
+this.name = 'base'; 
+this.base = 1991; 
+this.sayHello = function() { 
+console.log('Hello ' + this.name); 
+}; 
+} 
+Base.prototype.showName = function() { 
+console.log(this.name);
+}; 
+function Sub() { 
+this.name = 'sub'; 
+} 
+util.inherits(Sub, Base); 
+var objBase = new Base(); 
+objBase.showName(); 
+objBase.sayHello(); 
+console.log(objBase); 
+
+var objSub = new Sub(); 
+objSub.showName(); 
+//objSub.sayHello();  //这里如果未注释会报错，因为为定义在prototype中
+console.log(objSub);
+</code></pre>
+<p>我们定义了一个基础对象 Base 和一个继承自 Base 的 Sub，Base 有三个在构造函数内定义的属性和一个原型中定义的函数，通过util.inherits 实现继承。运行结果如下：</p>
+<pre><code>base 
+Hello base 
+{ name: 'base', base: 1991, sayHello: [Function] } 
+sub 
+{ name: 'sub' }
+</code></pre>
+<p>Sub 仅仅继承了Base 在<strong>原型中定义的函数</strong>，而构造函数内部创造的 base 属 性和 sayHello 函数都没有被 Sub 继承。</p>
+<p>同时，在原型中定义的属性不会被 console.log 作为对象的属性输出。</p>
+<h3 id="3-util-inspect"><a href="#3-util-inspect" class="headerlink" title="3.util.inspect"></a>3.util.inspect</h3><p>将任意对象转换 为字符串的方法，通常用于调试和错误输出。它至少接受一个参数 object，</p>
+<p><a target="_blank" rel="noopener" href="https://imgchr.com/i/r6QVU0"><img src="https://s3.ax1x.com/2020/12/23/r6QVU0.png" alt="r6QVU0.png"></a></p>
+<h3 id="4-util-isArray-object-、util-isRegExp-object-、util-isDate-object"><a href="#4-util-isArray-object-、util-isRegExp-object-、util-isDate-object" class="headerlink" title="4.util.isArray(object)、util.isRegExp(object)、util.isDate(object)"></a>4.util.isArray(object)、util.isRegExp(object)、util.isDate(object)</h3><p>判断是否是数组、正则表达式、日期</p>
+<h2 id="三、文件系统"><a href="#三、文件系统" class="headerlink" title="三、文件系统"></a>三、文件系统</h2><p>参考</p>
+<p><a target="_blank" rel="noopener" href="https://www.runoob.com/nodejs/nodejs-fs.html">https://www.runoob.com/nodejs/nodejs-fs.html</a></p>
+<p>文件导入：</p>
+<pre><code>var fs = require("fs")
+</code></pre>
+<h3 id="1-文件的同步与异步读取"><a href="#1-文件的同步与异步读取" class="headerlink" title="1.文件的同步与异步读取"></a>1.文件的同步与异步读取</h3><p>文件内容的函数有<strong>异步的 fs.readFile()</strong> 和同步的 fs.readFileSync()。</p>
+<p>异步的方法函数最后一个参数为回调函数，回调函数的第一个参数包含了错误信息(error)。</p>
+<p>建议大家使用异步方法，比起同步，异步方法性能更高，速度更快，而且没有阻塞。</p>
+<p>例：<br><a target="_blank" rel="noopener" href="https://imgchr.com/i/r6dQMt"><img src="https://s3.ax1x.com/2020/12/23/r6dQMt.png" alt="r6dQMt.png"></a></p>
+
+    
+
+    
+
+    
+
+  </div>
+  <div class="article-info article-info-index">
+    
+    
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">初学</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+    
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/node与vue初学//" class="article-tag-list-link color1">node与vue初学</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+
+    
+    <p class="article-more-link">
+      <a class="article-more-a" href="/2021/03/30/node%E4%B8%8Evue%E5%88%9D%E5%AD%A6/%E7%AC%AC%E4%B9%9D%E5%A4%A9%E6%97%A5%E5%BF%97/">展开全文 >></a>
+    </p>
+    
+
+    
+    <div class="clearfix"></div>
+  </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+    <article id="post-node与vue初学/第八天日志" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+  
+  
+    <h1 itemprop="name">
+	
+	  <a class="article-title" href="/2021/03/30/node%E4%B8%8Evue%E5%88%9D%E5%AD%A6/%E7%AC%AC%E5%85%AB%E5%A4%A9%E6%97%A5%E5%BF%97/" target="_blank">第八天日志</a>
+  
+    </h1>
+  
+
+
+  
+  
+<a href="/2021/03/30/node%E4%B8%8Evue%E5%88%9D%E5%AD%A6/%E7%AC%AC%E5%85%AB%E5%A4%A9%E6%97%A5%E5%BF%97/" class="archive-article-date">
+        <time datetime="2021-03-30T12:54:04.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-03-30</time>
+</a>
+
+  
+  
+    
+
+  
+  </header>
+  
+  <div class="article-entry" itemprop="articleBody">
+    
+    
+    
+    <h1 id="第八天日志"><a href="#第八天日志" class="headerlink" title="第八天日志"></a>第八天日志</h1><h2 id="一、js回顾"><a href="#一、js回顾" class="headerlink" title="一、js回顾"></a>一、js回顾</h2><p>###1.document<br>特点只能window，因为它是window.document是在浏览器中的全局对象window，所以不能在cmd中进行，如：<br><a target="_blank" rel="noopener" href="https://imgchr.com/i/r0TaPP"><img src="https://s3.ax1x.com/2020/12/21/r0TaPP.png" alt="r0TaPP.png"></a></p>
+<h3 id="2-对象中的元素以及匿名函数"><a href="#2-对象中的元素以及匿名函数" class="headerlink" title="2.对象中的元素以及匿名函数"></a>2.对象中的元素以及匿名函数</h3><p>1.匿名函数<br>本例中hello函数不能直接调用（形如hello.set（2））,只能先构造</p>
+<p>例如： </p>
+<pre><code>var a = new hello() ; a.set(2)就可以
+</code></pre>
+<p><a target="_blank" rel="noopener" href="https://imgchr.com/i/r07aw9"><img src="https://s3.ax1x.com/2020/12/21/r07aw9.png" alt="r07aw9.png"></a></p>
+<p>2。对象中的函数元素本例中，aa这里相当于函数，其中函数可以用匿名函数，因为<strong>a没啥用</strong>，名字只能是aa</p>
+<p><a target="_blank" rel="noopener" href="https://imgchr.com/i/r07UeJ"><img src="https://s3.ax1x.com/2020/12/21/r07UeJ.png" alt="r07UeJ.png"></a></p>
+<h2 id="二、-nodejs全局对象"><a href="#二、-nodejs全局对象" class="headerlink" title="二、 nodejs全局对象"></a>二、 nodejs全局对象</h2><h3 id="1-引出概念"><a href="#1-引出概念" class="headerlink" title="1.引出概念"></a>1.引出概念</h3><p>而 Node.js 中的全局对象是 global，这里可以理解为JS中的windows全局对象，可以直接访问</p>
+<p>在 Node.js 中你不可能在最外层定义变量，因为所有用户代码都是属于当前模块的， 而模块本身不是最外层上下文。<br>**<br>注意：** 最好不要使用 var 定义变量以避免引入全局变量，因为全局变量会污染命名空间，提高代码的耦合风险。</p>
+<h3 id="2-方法："><a href="#2-方法：" class="headerlink" title="2.方法："></a>2.方法：</h3><p>（1）_filename与 __dirname<br>输出文件所在位置的绝对路径,以及脚本文件的目录</p>
+<pre><code>// 输出全局变量 __dirname 的值
+console.log( __dirname );
+</code></pre>
+<p>（2）setTimeout(cb, ms)<br>setTimeout(cb, ms) 全局函数在指定的毫秒(ms)数后执行指定函数(cb)。：setTimeout() 只执行一次指定函数。</p>
+<pre><code>function printHello(){
+   console.log( "Hello, World!");
+}
+// 两秒后执行以上函数
+setTimeout(printHello, 2000);
+</code></pre>
+<p>对应：setInterval(cb, ms)循环执行<br>用clearTimeout(t)停止，</p>
+<pre><code>function printHello(){
+   console.log( "Hello, World!");
+}
+// 两秒后执行以上函数
+var t = setTimeout(printHello, 2000);
+
+// 清除定时器
+clearTimeout(t);
+</code></pre>
+<p>（3）console方法</p>
+<p>console.log相当于printf</p>
+<pre><code>console.log('byvoid%diovyb', 1991); 
+byvoid1991iovyb 
+</code></pre>
+<h3 id="3-process"><a href="#3-process" class="headerlink" title="3.process"></a>3.process</h3><p>#</p><div style="color: red;">属性</div><p></p>
+<p><a target="_blank" rel="noopener" href="https://imgchr.com/i/r0Oca4"><img src="https://s3.ax1x.com/2020/12/21/r0Oca4.png" alt="r0Oca4.png"></a></p>
+<p>#</p><div style="color: red;">方法</div>：<p></p>
+<p><a target="_blank" rel="noopener" href="https://imgchr.com/i/r0OgIJ"><img src="https://s3.ax1x.com/2020/12/21/r0OgIJ.png" alt="r0OgIJ.png"></a></p>
+<h2 id="三、vue"><a href="#三、vue" class="headerlink" title="三、vue"></a>三、vue</h2><h3 id="1-attribute-和-property"><a href="#1-attribute-和-property" class="headerlink" title="1.attribute 和 property"></a>1.attribute 和 property</h3><p>attribute 是元素标签的属性，property 是元素对象的属性，例如：</p>
+<pre><code>&lt;input id="input" value="test value"&gt;
+&lt;script&gt;
+let input = document.getElementById('input');
+console.log(input.getAttribute('value')); // test value
+console.log(input.value); // test value
+&lt;/script&gt;
+</code></pre>
+<p>input 的 value attribute 是通过<strong>标签里的 value=“test value”</strong> 定义的，可以通过input.getAttribute(‘value’) 获取，可以通过 input.setAttribute(‘value’, ‘New Value’) 更新</p>
+<p>input 的 value property 可通过 <strong>input.value（对象）</strong> 获取和更新，初始值是与 attribute 中的赋值一致的</p>
+
+    
+
+    
+
+    
+
+  </div>
+  <div class="article-info article-info-index">
+    
+    
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">初学</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+    
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/node与vue初学//" class="article-tag-list-link color1">node与vue初学</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+
+    
+    <p class="article-more-link">
+      <a class="article-more-a" href="/2021/03/30/node%E4%B8%8Evue%E5%88%9D%E5%AD%A6/%E7%AC%AC%E5%85%AB%E5%A4%A9%E6%97%A5%E5%BF%97/">展开全文 >></a>
+    </p>
+    
+
+    
+    <div class="clearfix"></div>
+  </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+    <article id="post-node与vue初学/第六天学习" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+  
+  
+    <h1 itemprop="name">
+	
+	  <a class="article-title" href="/2021/03/30/node%E4%B8%8Evue%E5%88%9D%E5%AD%A6/%E7%AC%AC%E5%85%AD%E5%A4%A9%E5%AD%A6%E4%B9%A0/" target="_blank">第六天学习</a>
+  
+    </h1>
+  
+
+
+  
+  
+<a href="/2021/03/30/node%E4%B8%8Evue%E5%88%9D%E5%AD%A6/%E7%AC%AC%E5%85%AD%E5%A4%A9%E5%AD%A6%E4%B9%A0/" class="archive-article-date">
+        <time datetime="2021-03-30T12:52:54.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-03-30</time>
+</a>
+
+  
+  
+    
+
+  
+  </header>
+  
+  <div class="article-entry" itemprop="articleBody">
+    
+    
+    
+    <h1 id="日志六"><a href="#日志六" class="headerlink" title="日志六"></a>日志六</h1><h2 id="一、模块"><a href="#一、模块" class="headerlink" title="一、模块"></a>一、模块</h2><h3 id="1-优势："><a href="#1-优势：" class="headerlink" title="1.优势："></a>1.优势：</h3><p>模块，包括Node内置的模块和来自第三方的模块且相同名字的函数和变量完全可以分别存在不同的模块中，</p>
+<p>例：  模块引入;并把greet函数包装为模块并输出</p>
+<pre><code>function greet(name) {
+    console.log(s + ', ' + name + '!');
+}
+
+module.exports = greet;//这里也可以是对象，函数，数组
+
+// 引入hello模块:
+var greet = require('./hello');   ./注意其相对路径
+</code></pre>
+<h3 id="2-CommonJS规范："><a href="#2-CommonJS规范：" class="headerlink" title="2.CommonJS规范："></a>2.CommonJS规范：</h3><p>由于相同名字的变量可以在不同模块中使用，（原理：把一个模块变为匿名函数的局部变量）<br>一个模块想要对外暴露变量（函数也是变量），可以用module.exports = variable;，一个模块要引用其他模块暴露的变量，用var ref = require(‘module_name’);就拿到了引用模块的变量。</p>
+<h3 id="3-路由"><a href="#3-路由" class="headerlink" title="3.路由"></a>3.路由</h3><p>路由简单的说就是对url的分层解析</p>
+<p>首先去解析域名或ip</p>
+<p>其次去解析到服务器的特定资源文件</p>
+<p>再次去解析特定资源的特定状态</p>
+<h2 id="二、path函数："><a href="#二、path函数：" class="headerlink" title="二、path函数："></a>二、path函数：</h2><h3 id="1-意义及调用"><a href="#1-意义及调用" class="headerlink" title="1.意义及调用"></a>1.意义及调用</h3><p>提供了许多非常实用的函数来访问文件系统并与文件系统进行交互。<br>const path = require(‘path’)</p>
+<h3 id="2-方法："><a href="#2-方法：" class="headerlink" title="2.方法："></a>2.方法：</h3><p>该模块提供了 path.sep（作为路径段分隔符，在 Windows 上是 \，在 Linux/macOS 上是 /）和 path.delimiter（作为路径定界符，在 Windows 上是 ;，在 Linux/macOS 上是 :）。</p>
+<p>（1）path.basename返回路径的最后一部分。 第二个参数可以过滤掉文件的扩展名：</p>
+<pre><code>require('path').basename('/test/something') //something
+require('path').basename('/test/something.txt') //something.txt
+require('path').basename('/test/something.txt', '.txt') //something
+</code></pre>
+<p>(2)path.dirname—-&gt;返回路径的目录部分：</p>
+<p>（3）path.extname()—-&gt;返回路径的扩展名部分。</p>
+<p>(4)path.isAbsolute()——-&gt;<br>如果是绝对路径，则返回 true。</p>
+<pre><code>require('path').isAbsolute('/test/something') // true
+require('path').isAbsolute('./test/something') // false
+</code></pre>
+<p>(5)path.join()<br>连接路径的两个或多个部分：</p>
+<pre><code>const name = 'joe'
+require('path').join('/', 'users', name, 'notes.txt') //'/users/joe/notes
+</code></pre>
+<p>(6)path.normalize<br>当包含类似 .、.. 或双斜杠等相对的说明符时，则尝试计算实际的路径：</p>
+<p>(7)path.parse<br>解析对象的路径为组成其的片段：</p>
+<p>root: 根路径。</p>
+<p>dir: 从根路径开始的文件夹路径。</p>
+<p>base: 文件名 + 扩展名</p>
+<p>name: 文件名</p>
+<p>ext: 文件扩展名</p>
+<p>例如：</p>
+<pre><code>require('path').parse('/users/test.txt')
+结果是：
+</code></pre>
+<p>{</p>
+<p>  root: ‘/‘,</p>
+<p>  dir: ‘/users’,</p>
+<p>  base: ‘test.txt’,</p>
+<p>  ext: ‘.txt’,</p>
+<p>  name: ‘test’</p>
+<p>}</p>
+<p>(8)path.relative()</p>
+<p>接受 2 个路径作为参数。 基于当前工作目录，返回从第一个路径到第二个路径的相对路径</p>
+<p>(9)path.resolve</p>
+<p>可以使用 path.resolve() 获得相对路径的绝对路径计算：<br>绝对路径，就是从<strong>盘符开始</strong>的路径，例如：“c:\windows\system32\mfc42.dll”。 相对路径，就是从<strong>当前路径开始</strong>的路径，例如，当前路径是“c:\windows”，那么指定前面范例的文件，可以直接写“system32\mfc42.dll”。 注意，路径分隔符“\”在 c 语言里面是转义字符，所以表达路径分隔符需要用“\”。</p>
+<pre><code>path.resolve('joe.txt') //'/Users/joe/joe.txt' 
+</code></pre>
+<p>如果从主文件夹运行<br>通过指定第二个参数，resolve 会使用第一个参数作为第二个参数的基准：</p>
+<pre><code>path.resolve('tmp', 'joe.txt') //'/Users/joe/tmp/joe.txt' 
+</code></pre>
+<p>如果从主文件夹运行<br>如果第一个参数以斜杠开头，则表示它是绝对路径：</p>
+<pre><code>path.resolve('/etc', 'joe.txt') //'/etc/joe.txt'
+</code></pre>
+
+    
+
+    
+
+    
+
+  </div>
+  <div class="article-info article-info-index">
+    
+    
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">初学</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+    
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/node与vue初学//" class="article-tag-list-link color1">node与vue初学</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+
+    
+    <p class="article-more-link">
+      <a class="article-more-a" href="/2021/03/30/node%E4%B8%8Evue%E5%88%9D%E5%AD%A6/%E7%AC%AC%E5%85%AD%E5%A4%A9%E5%AD%A6%E4%B9%A0/">展开全文 >></a>
+    </p>
+    
+
+    
+    <div class="clearfix"></div>
+  </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+    <article id="post-node与vue初学/第五天学习" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+  
+  
+    <h1 itemprop="name">
+	
+	  <a class="article-title" href="/2021/03/30/node%E4%B8%8Evue%E5%88%9D%E5%AD%A6/%E7%AC%AC%E4%BA%94%E5%A4%A9%E5%AD%A6%E4%B9%A0/" target="_blank">第五天学习</a>
+  
+    </h1>
+  
+
+
+  
+  
+<a href="/2021/03/30/node%E4%B8%8Evue%E5%88%9D%E5%AD%A6/%E7%AC%AC%E4%BA%94%E5%A4%A9%E5%AD%A6%E4%B9%A0/" class="archive-article-date">
+        <time datetime="2021-03-30T12:52:14.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-03-30</time>
+</a>
+
+  
+  
+    
+
+  
+  </header>
+  
+  <div class="article-entry" itemprop="articleBody">
+    
+    
+    
+    <p>#第五天日志</p>
+<h2 id="一-模块系统"><a href="#一-模块系统" class="headerlink" title="一.模块系统"></a>一.模块系统</h2><h3 id="1-引入"><a href="#1-引入" class="headerlink" title="1.引入"></a>1.引入</h3><p>Node.js 提供了 exports 和 require 两个对象，</p>
+<p> （1）exports 是模块公开的接口</p>
+<p>（2）require 用于从外部获取一个模块的接口，即所获取模块的 exports 对象。</p>
+<p>例：</p>
+<p>main.js:</p>
+<pre><code>var hello = require('./hello');
+hello.world();
+</code></pre>
+<p>hello.js:</p>
+<pre><code>exports.world = function() {
+  console.log('Hello World');
+}
+</code></pre>
+<p>hello.js 通过 exports 对象把 world 作为模块的访问<strong>接口</strong>，在 main.js 中通过 require(‘./hello’) 加载这个模块，然后就可以<strong>直接访 问 hello.js 中 exports 对象的成员函数了。</strong></p>
+<h3 id="注意（扩展）："><a href="#注意（扩展）：" class="headerlink" title="注意（扩展）："></a>注意（扩展）：</h3><h3 id="1-cd操作仅可以到达文件夹"><a href="#1-cd操作仅可以到达文件夹" class="headerlink" title="1.cd操作仅可以到达文件夹"></a>1.cd操作仅可以到达文件夹</h3><h3 id="2-cd到目标文件夹，还得一步一步来"><a href="#2-cd到目标文件夹，还得一步一步来" class="headerlink" title="2.cd到目标文件夹，还得一步一步来"></a>2.cd到目标文件夹，还得一步一步来</h3><p><a target="_blank" rel="noopener" href="https://imgchr.com/i/rd8vef"><img src="https://s3.ax1x.com/2020/12/20/rd8vef.png" alt="rd8vef.png"></a></p>
+<p>也使用 module.exports = Hello 代替了exports.world = function(){}。 在外部引用该模块时，其接口对象就是要输出的 Hello 对象本身，而不是原先的 exports。<br>例：</p>
+<pre><code>module.exports = Hello（其为函数 ）;
+</code></pre>
+<h2 id="2-require的优先级"><a href="#2-require的优先级" class="headerlink" title="2.require的优先级"></a>2.require的优先级</h2><p>1，从文件模块缓存中下载</p>
+<p>2.从原生模块加载（从里面的缓冲区进行加载）</p>
+<p>3.从文件加载<br><a target="_blank" rel="noopener" href="https://imgchr.com/i/rdt2tO"><img src="https://s3.ax1x.com/2020/12/20/rdt2tO.png" alt="rdt2tO.png"></a><br>扩展： </p>
+<p>  1.原生模块</p>
+<p>Objective-C中自定义的一些类，这些类当中有实现一些功能的方法，这就是原生模块。而之所以叫原生模块，是因为我们要用rn的思想，在js代码中调用这些方法。</p>
+<p>2.<br>Objective-C</p>
+<p>Objective-C，通常写作ObjC或OC和较少用的Objective C或Obj-C，是扩充C的面向对象编程语言。它主要使用于Mac OS X和GNUstep这两个使用OpenStep标准的系统，而在NeXTSTEP和OpenStep中它更是基本语言。</p>
+<p>3.rn的思想</p>
+<p>React Native (简称RN)是Facebook于2015年4月开源的du跨平台移动zhi应用dao开发框架，zhuan是Facebook早先开源的UI框架 React 在原shu生移动应用平台的衍生产物，目前支持iOS和安卓两大平台。<br>RN使用Javascript语言，类似于HTML的JSX，以及CSS来开发移动应用，</p>
+
+    
+
+    
+
+    
+
+  </div>
+  <div class="article-info article-info-index">
+    
+    
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">初学</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+    
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/node与vue初学//" class="article-tag-list-link color1">node与vue初学</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+
+    
+    <p class="article-more-link">
+      <a class="article-more-a" href="/2021/03/30/node%E4%B8%8Evue%E5%88%9D%E5%AD%A6/%E7%AC%AC%E4%BA%94%E5%A4%A9%E5%AD%A6%E4%B9%A0/">展开全文 >></a>
+    </p>
+    
+
+    
+    <div class="clearfix"></div>
+  </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+    <article id="post-node与vue初学/第四天学习" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+  
+  
+    <h1 itemprop="name">
+	
+	  <a class="article-title" href="/2021/03/30/node%E4%B8%8Evue%E5%88%9D%E5%AD%A6/%E7%AC%AC%E5%9B%9B%E5%A4%A9%E5%AD%A6%E4%B9%A0/" target="_blank">第四天学习</a>
+  
+    </h1>
+  
+
+
+  
+  
+<a href="/2021/03/30/node%E4%B8%8Evue%E5%88%9D%E5%AD%A6/%E7%AC%AC%E5%9B%9B%E5%A4%A9%E5%AD%A6%E4%B9%A0/" class="archive-article-date">
+        <time datetime="2021-03-30T12:50:10.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-03-30</time>
+</a>
+
+  
+  
+    
+
+  
+  </header>
+  
+  <div class="article-entry" itemprop="articleBody">
+    
+    
+    
+    <h1 id="第四天日志"><a href="#第四天日志" class="headerlink" title="第四天日志"></a>第四天日志</h1><h2 id="一、node-js的个人理解"><a href="#一、node-js的个人理解" class="headerlink" title="一、node.js的个人理解"></a>一、node.js的个人理解</h2><h3 id="1-nodejs定义"><a href="#1-nodejs定义" class="headerlink" title="1.nodejs定义"></a>1.nodejs定义</h3><p>Nodejs是一个基于Chrome V8引擎（为CPU解读JS，JS为解释性语言由引擎直接读取源码）的JavaScript运行环境，一个让JavaScript运行在服务端的开发平台。</p>
+<h4 id="Node-js的地位"><a href="#Node-js的地位" class="headerlink" title="Node.js的地位"></a>Node.js的地位</h4><p>目前，Node.js在大部分领域都占有一席之地，尤其是I/O密集型的。</p>
+<p>比如Web开发，微服务，前端构建等。不少大型网站都是使用 Node.js 作为后台开发语言的，用的最多的就是使用Node.js做前端渲染和架构优化，比如 淘宝 双十一、去哪儿网 的 PC 端核心业务等。</p>
+<p>另外，有不少知名的前端库也是使用 Node.js 开发的，如Webpack是一个强大的打包器，React/Vue 是成熟的前端组件化框架。</p>
+<p>Node.js通常被用来开发低延迟的网络应用，也就是那些需要在服务器端环境和前端实时收集和交换数据的应用（API、即时聊天、微服务）。阿里巴巴、腾讯、Qunar、百度、PayPal、道琼斯、沃尔玛和 LinkedIn 都采用了 Node.js 框架搭建应用。</p>
+<h3 id="3-Node-js的用途"><a href="#3-Node-js的用途" class="headerlink" title="3.Node.js的用途"></a>3.Node.js的用途</h3><p>Node.js最适合在流媒体应用程序中使用，还有一些聊天应用程序。</p>
+<p>游戏服务器 - 需要一次处理数千个请求的快速和高性能服务器，这是一个理想的框架。</p>
+<p>广告服务器 - 再次在这里你可以有数千个请求从中央服务器提取广告，Node.js可以是一个理想的框架来处理这个问题。</p>
+<p>流服务器 - 使用Node的另一个理想方案是用于多媒体流服务器，其中客户端有请求从该服务器提取不同的多媒体内容。</p>
+<h2 id="二-Node-js-Buffer-缓冲区-的学习"><a href="#二-Node-js-Buffer-缓冲区-的学习" class="headerlink" title="二.Node.js Buffer(缓冲区)的学习"></a>二.Node.js Buffer(缓冲区)的学习</h2><h3 id="1、Buffer的引入："><a href="#1、Buffer的引入：" class="headerlink" title="1、Buffer的引入："></a>1、Buffer的引入：</h3><p>JavaScript 语言自身只有字符串数据类型，没有二进制数据类型。</p>
+<p>但在处理像TCP（传输控制协议）流或文件流（文件流是继承自iostream。与iostream、sstream共同作为头文件构成IO标准库。）时，必须使用到二进制数据。所以—–&gt;buffer类:存放二进制数据区</p>
+<p><strong>流：建立在面向对象的基础上的一种抽象处理事件的工具</strong></p>
+<pre><code>建议使用 Buffer.from() 接口去创建Buffer对象。
+</code></pre>
+<h3 id="2、Buffer-与字符编码"><a href="#2、Buffer-与字符编码" class="headerlink" title="2、Buffer 与字符编码"></a>2、Buffer 与字符编码</h3><p>Buffer 实例一般用于表示编码字符的序列，比如 UTF-8 、 UCS2 、 Base64 、或十六进制编码的数据。 通过使用显式的字符编码，就可以在 Buffer 实例与普通的 JavaScript 字符串之间进行相互转换。</p>
+<pre><code>const buf = Buffer.from('runoob', 'ascii');
+
+// 输出 72756e6f6f62
+console.log(buf.toString('hex'));
+</code></pre>
+<h3 id="3、创建方式"><a href="#3、创建方式" class="headerlink" title="3、创建方式"></a>3、创建方式</h3><p><a target="_blank" rel="noopener" href="https://imgchr.com/i/r8NHUA"><img src="https://s3.ax1x.com/2020/12/17/r8NHUA.png" alt="r8NHUA.png"></a></p>
+<h3 id="4、执行nodejs的方式注意"><a href="#4、执行nodejs的方式注意" class="headerlink" title="4、执行nodejs的方式注意"></a>4、执行nodejs的方式注意</h3><p>用npm执行时，注意<strong>文件匹配问题！！！</strong></p>
+<h3 id="5、Buffer的基本操作"><a href="#5、Buffer的基本操作" class="headerlink" title="5、Buffer的基本操作"></a>5、Buffer的基本操作</h3><h3 id="（1）写入缓冲区"><a href="#（1）写入缓冲区" class="headerlink" title="（1）写入缓冲区"></a>（1）写入缓冲区</h3><pre><code>buf.write(string[, offset[, length]][, encoding])
+</code></pre>
+<p>参数描述如下：</p>
+<p>a.string - 写入缓冲区的字符串。</p>
+<p>b.offset - 缓冲区开始写入的索引值，默认为 0 。</p>
+<p>c.length - 写入的字节数，默认为 buffer.length</p>
+<p>d.encoding - 使用的编码。默认为 ‘utf8’ 。</p>
+<h3 id="（2）读入缓冲区"><a href="#（2）读入缓冲区" class="headerlink" title="（2）读入缓冲区"></a>（2）读入缓冲区</h3><pre><code>buf.toString([encoding[, start[, end]]])
+</code></pre>
+<p>参数描述如下：</p>
+<p>a.encoding - 使用的编码。默认为 ‘utf8’ 。</p>
+<p>b.start - 指定开始读取的索引位置，默认为 0。</p>
+<p>c.end - 结束位置，默认为缓冲区的末尾。</p>
+<h3 id="（3）将-Buffer-转换为-JSON-对象"><a href="#（3）将-Buffer-转换为-JSON-对象" class="headerlink" title="（3）将 Buffer 转换为 JSON 对象"></a>（3）将 Buffer 转换为 JSON 对象</h3><p>将 Node Buffer 转换为 JSON 对象的函数语法格式如下：</p>
+<pre><code>buf.toJSON()
+</code></pre>
+<p>当字符串化一个 Buffer 实例时，JSON.stringify() 会隐式地调用该 toJSON()。</p>
+<p>返回值————————》返回 JSON 对象。</p>
+<pre><code>实例
+const buf = Buffer.from([0x1, 0x2, 0x3, 0x4, 0x5]);
+const json = JSON.stringify(buf);
+
+// 输出: {"type":"Buffer","data":[1,2,3,4,5]}
+console.log(json);
+
+const copy = JSON.parse(json, (key, value) =&gt; {
+  return value &amp;&amp; value.type === 'Buffer' ?
+Buffer.from(value.data) :
+value;
+});
+
+// 输出: &lt;Buffer 01 02 03 04 05&gt;
+console.log(copy);
+</code></pre>
+<p>执行以上代码，输出结果为：</p>
+<pre><code>{"type":"Buffer","data":[1,2,3,4,5]}
+&lt;Buffer 01 02 03 04 05&gt;
+</code></pre>
+<h3 id="之后还有"><a href="#之后还有" class="headerlink" title="之后还有"></a>之后还有</h3><p>：：：缓冲区的的<br>裁剪（buf.slice([start[, end]])），</p>
+<p>拷贝（buf.copy(targetBuffer[, targetStart[, sourceStart[, sourceEnd]]])），</p>
+<p>长度，</p>
+<p>比较（buf.compare(otherBuffer);）与</p>
+<p>合并（Buffer.concat(list[, totalLength])），可以通过数组的相关知识理解。</p>
+<p><strong>一个 Buffer 类似于一个整数数组，但它对应于 V8 堆内存之外的一块原始内存。</strong></p>
+<p>学习网站：<br><a target="_blank" rel="noopener" href="https://www.runoob.com/nodejs/nodejs-buffer.html">https://www.runoob.com/nodejs/nodejs-buffer.html</a></p>
+<h3 id="扩展：解决git-bash的问题："><a href="#扩展：解决git-bash的问题：" class="headerlink" title="扩展：解决git bash的问题："></a>扩展：解决git bash的问题：</h3><pre><code>fatal: not a git repository (or any of the parent directories): .git
+</code></pre>
+<p><a target="_blank" rel="noopener" href="https://imgchr.com/i/r8DEx1"><img src="https://s3.ax1x.com/2020/12/17/r8DEx1.png" alt="r8DEx1.png"></a></p>
+<p>git init操作</p>
+<h2 id="三-Node-js-Stream-流"><a href="#三-Node-js-Stream-流" class="headerlink" title="三.Node.js Stream(流)"></a>三.Node.js Stream(流)</h2><h4 id="前言："><a href="#前言：" class="headerlink" title="前言："></a>前言：</h4><p>Stream 是一个抽象接口，Node 中有很多对象实现了这个接口。例如，对http 服务器发起请求的request 对象就是一个 Stream，还有stdout（标准输出）。</p>
+<h3 id="1-Node-js，Stream-有四种流类型："><a href="#1-Node-js，Stream-有四种流类型：" class="headerlink" title="1.Node.js，Stream 有四种流类型："></a>1.Node.js，Stream 有四种流类型：</h3><p>Readable - 可读操作。</p>
+<p>Writable - 可写操作。</p>
+<p>Duplex - 可读可写操作.</p>
+<p>Transform - 操作被写入数据，然后读出结果。</p>
+<p>所有的 Stream 对象都是 EventEmitter 的实例。</p>
+<h3 id="2-常用的事件有："><a href="#2-常用的事件有：" class="headerlink" title="2.常用的事件有："></a>2.常用的事件有：</h3><p>data - 当有数据可读时触发。</p>
+<p>end - 没有更多的数据可读时触发。</p>
+<p>error - 在接收和写入过程中发生错误时触发。</p>
+<p>finish - 所有数据已被写入到底层系统时触发</p>
+<p>内容分为：</p>
+<h3 id="读取数据"><a href="#读取数据" class="headerlink" title="读取数据"></a>读取数据</h3><pre><code>// 创建一个可读流
+var readerStream = fs.createReadStream('input.txt');
+</code></pre>
+<h3 id="写入流"><a href="#写入流" class="headerlink" title="写入流"></a>写入流</h3><pre><code>// 创建一个可写流
+var writerStream = fs.createWriteStream('output.txt');
+</code></pre>
+<p><strong>样例：</strong></p>
+<p><a target="_blank" rel="noopener" href="https://imgchr.com/i/rGYsXD"><img src="https://s3.ax1x.com/2020/12/17/rGYsXD.png" alt="rGYsXD.png"></a></p>
+<h3 id="链式流"><a href="#链式流" class="headerlink" title="链式流"></a>链式流</h3><p>（链式是通过连接输出流到另外一个流并创建多个流操作链的机制。链式流一般用于管道操作。）</p>
+<pre><code>var fs = require("fs");
+
+// 创建一个可读流
+var readerStream = fs.createReadStream('input.txt');
+
+// 创建一个可写流
+var writerStream = fs.createWriteStream('output.txt');
+
+// 管道读写操作
+// 读取 input.txt 文件内容，并将内容写入到 output.txt 文件中
+readerStream.pipe(writerStream);
+</code></pre>
+<h3 id="管道流（我们把文件比作装水的桶，而水就是文件里的内容，我们用一根管子-pipe-连接两个桶使得水从一个桶流入另一个桶，这样就慢慢的实现了大文件的复制过程。）"><a href="#管道流（我们把文件比作装水的桶，而水就是文件里的内容，我们用一根管子-pipe-连接两个桶使得水从一个桶流入另一个桶，这样就慢慢的实现了大文件的复制过程。）" class="headerlink" title="管道流（我们把文件比作装水的桶，而水就是文件里的内容，我们用一根管子(pipe)连接两个桶使得水从一个桶流入另一个桶，这样就慢慢的实现了大文件的复制过程。）"></a>管道流（我们把文件比作装水的桶，而水就是文件里的内容，我们用一根管子(pipe)连接两个桶使得水从一个桶流入另一个桶，这样就慢慢的实现了大文件的复制过程。）</h3><p>生成压缩文件：</p>
+<pre><code>var fs = require("fs");
+var zlib = require('zlib');
+
+// 压缩 input.txt 文件为 input.txt.gz
+fs.createReadStream('input.txt')
+  .pipe(zlib.createGzip())
+  .pipe(fs.createWriteStream('input.txt.gz'));
+
+console.log("文件压缩完成。");
+</code></pre>
+<p>解压：</p>
+<pre><code>var fs = require("fs");
+var zlib = require('zlib');
+
+// 解压 input.txt.gz 文件为 input.txt
+fs.createReadStream('input.txt.gz')
+  .pipe(zlib.createGunzip())
+  .pipe(fs.createWriteStream('input.txt'));
+
+console.log("文件解压完成。");
+</code></pre>
+
+    
+
+    
+
+    
+
+  </div>
+  <div class="article-info article-info-index">
+    
+    
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">初学</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+    
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/node与vue初学//" class="article-tag-list-link color1">node与vue初学</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+
+    
+    <p class="article-more-link">
+      <a class="article-more-a" href="/2021/03/30/node%E4%B8%8Evue%E5%88%9D%E5%AD%A6/%E7%AC%AC%E5%9B%9B%E5%A4%A9%E5%AD%A6%E4%B9%A0/">展开全文 >></a>
+    </p>
+    
+
+    
+    <div class="clearfix"></div>
+  </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+    <article id="post-node与vue初学/第七天日志" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+  
+  
+    <h1 itemprop="name">
+	
+	  <a class="article-title" href="/2021/03/30/node%E4%B8%8Evue%E5%88%9D%E5%AD%A6/%E7%AC%AC%E4%B8%83%E5%A4%A9%E6%97%A5%E5%BF%97/" target="_blank">第七天日志</a>
+  
+    </h1>
+  
+
+
+  
+  
+<a href="/2021/03/30/node%E4%B8%8Evue%E5%88%9D%E5%AD%A6/%E7%AC%AC%E4%B8%83%E5%A4%A9%E6%97%A5%E5%BF%97/" class="archive-article-date">
+        <time datetime="2021-03-30T09:18:52.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-03-30</time>
+</a>
+
+  
+  
+    
+
+  
+  </header>
+  
+  <div class="article-entry" itemprop="articleBody">
+    
+    
+    
+    <h2 id="第七天日志"><a href="#第七天日志" class="headerlink" title="第七天日志"></a>第七天日志</h2><h2 id="一、url模块"><a href="#一、url模块" class="headerlink" title="一、url模块"></a>一、url模块</h2><h3 id="1-url是啥："><a href="#1-url是啥：" class="headerlink" title="1.url是啥："></a>1.url是啥：</h3><p>每一信息资源都有统一的且在网上唯一的地址，该地址就叫URL（Uniform Resource Locator,统一资源定位器），它是WWW的统一资源定位标志，就是指网络地址。</p>
+<p>url模块只要提供一些实用函数，用于URL的处理和解析。<br>在Nodejs中可以直接引用url模块</p>
+<p>例：</p>
+<pre><code>const url = require("url");
+</code></pre>
+<p>url字符串就是我们经常在浏览器地址栏输入的一串字符，比如这样的一个url字符串<br><a target="_blank" rel="noopener" href="http://user:pass@host.com:8080/p/a/t/h?query=string#hash">http://user:pass@host.com:8080/p/a/t/h?query=string#hash</a><br>url对象解析url字符串会返回一个url对象，它包含url字符串每个组成部分来作为它的属性。<br>下面我们来看下上面的url字符串解析后的url对象：</p>
+<p><a target="_blank" rel="noopener" href="https://imgchr.com/i/r0pCHf"><img src="https://s3.ax1x.com/2020/12/21/r0pCHf.md.png" alt="r0pCHf.png" border="0"></a></p>
+<h3 id="2-对象参数"><a href="#2-对象参数" class="headerlink" title="2.对象参数"></a>2.对象参数</h3><p><strong>（1）href</strong></p>
+<p>href属性是解析后的完整的URL字符串，protocol和host都会被转换成小写。</p>
+<p><strong>（2）protocol</strong></p>
+<p>protocol用来表示URL的小写的协议，例如’http:’</p>
+<p><strong>（3）slashes(不常用)</strong></p>
+<p>slashes属性为布尔值，如果协议protocol冒号后跟的是两个斜杠字符（/）,那么值为true</p>
+<p><strong>（4）auth(不常用)</strong></p>
+<p>auth属性时URL的用户名与密码部分。对应上面的例子就是user:pass</p>
+<p><strong>（5）host</strong></p>
+<p>host属性时URL完整小写的主机部分。包括port（端口）。<br>例如host.com:8888</p>
+<p><strong>（6）hostname(*)</strong></p>
+<p>hostname是host属性排除端口port之后的小写的主机名部分<br>例如host.com</p>
+<p><strong>（7）port</strong></p>
+<p>端口号，如果没有则为null,</p>
+<p><strong>（8）path</strong></p>
+<p>path属性，由pathname与search组成的串接,不包含hash字符后面的东西<br>例如/p/a/t/h?query=string</p>
+<p><strong>（9）pathname(*)</strong></p>
+<p>pathname 属性包含URL的整个路径部分。跟在host后面，截止问号（？）或者哈希字符（#）分隔<br>例如/p/a/t/h</p>
+<p><strong>（10）search</strong></p>
+<p>search属性包含URL的查询字符串部分，包括开头的问号字符（？）<br>例如?query=string</p>
+<p><strong>（11）query(*)</strong></p>
+<p>query属性是不包含问号（？）的查询字符串<br>例如query=string</p>
+<p><strong>（12）hash(*)</strong></p>
+<p>hash属性包含URL的碎屏部分，包括开头的哈希字符（#）</p>
+<p>技巧</p>
+<p>host = hostname + port</p>
+<p>path = pathname + search</p>
+<p>search = ? + query</p>
+<h3 id="3-常用方法"><a href="#3-常用方法" class="headerlink" title="3.常用方法"></a>3.常用方法</h3><p>url方法主要有<br>1.url.parse()，—url字符串化为对象，返回为对象</p>
+<pre><code>const url = require("url");
+url.parse("https://cart.jd.com/cart.action?r=0.3662704717949117")
+</code></pre>
+<p>2.url.format()，—-url对象化为字符串</p>
+<pre><code>const url = require("url");
+var urlObj = {
+protocol:"https",
+slashes:true,
+hostname:"www.qihu.com",
+pathname:"/teach/content.html"
+};
+console.log(url.format(urlObj));
+</code></pre>
+<p>3.url.resolve()—-替换</p>
+<p>url.resolve(from,to)<br>url.resolve()方法主要用来插入或替换URL内容</p>
+<p>from 源地址<br>to 需要添加或替换的标签</p>
+<p>例</p>
+<pre><code>const url = require("url");
+
+console.log(url.resolve("/one/two/three","four"));
+</code></pre>
+<h2 id="二、搭建简单服务器"><a href="#二、搭建简单服务器" class="headerlink" title="二、搭建简单服务器"></a>二、搭建简单服务器</h2><h3 id="1。listen函数：int-listen-int-sockfd-int-backlog"><a href="#1。listen函数：int-listen-int-sockfd-int-backlog" class="headerlink" title="1。listen函数：int listen(int sockfd, int backlog);"></a>1。listen函数：int listen(int sockfd, int backlog);</h3><p>此函数是把一个主动套接字（客户端的套接字，主动来连接服务器端），转换成一个被动套接字（由服务器端的内核来接受它的连接请求）</p>
+<p>成功返回0， 失败返回-1；</p>
+<p>第一个参数为socket函数返回的一个文件描述符。</p>
+
+    
+
+    
+
+    
+
+  </div>
+  <div class="article-info article-info-index">
+    
+    
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">初学</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+    
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/node与vue初学//" class="article-tag-list-link color1">node与vue初学</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+
+    
+    <p class="article-more-link">
+      <a class="article-more-a" href="/2021/03/30/node%E4%B8%8Evue%E5%88%9D%E5%AD%A6/%E7%AC%AC%E4%B8%83%E5%A4%A9%E6%97%A5%E5%BF%97/">展开全文 >></a>
+    </p>
+    
+
+    
+    <div class="clearfix"></div>
+  </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
     <article id="post-node与vue初学/第二天日志" class="article article-type-post  article-index" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -415,228 +2005,9 @@ function foo2(value, callback1, callback2) { }
 
 
   
-    <article id="post-node与vue初学/第一天日志" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-  
-  
-    <h1 itemprop="name">
-	
-	  <a class="article-title" href="/2021/03/30/node%E4%B8%8Evue%E5%88%9D%E5%AD%A6/%E7%AC%AC%E4%B8%80%E5%A4%A9%E6%97%A5%E5%BF%97/" target="_blank">第一天学习</a>
-  
-    </h1>
-  
-
-
-  
-  
-<a href="/2021/03/30/node%E4%B8%8Evue%E5%88%9D%E5%AD%A6/%E7%AC%AC%E4%B8%80%E5%A4%A9%E6%97%A5%E5%BF%97/" class="archive-article-date">
-        <time datetime="2021-03-30T07:07:13.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-03-30</time>
-</a>
-
-  
-  
-    
-
-  
-  </header>
-  
-  <div class="article-entry" itemprop="articleBody">
-    
-    
-    
-    <h1 id="第一天学习"><a href="#第一天学习" class="headerlink" title="第一天学习"></a>第一天学习</h1><h2 id="一-npm的学习"><a href="#一-npm的学习" class="headerlink" title="一.npm的学习"></a>一.npm的学习</h2><h3 id="1-基础应用"><a href="#1-基础应用" class="headerlink" title="1.基础应用"></a>1.基础应用</h3><p>（1）版本查看    —- npm -v</p>
-<h3 id="2-初始化工程"><a href="#2-初始化工程" class="headerlink" title="2.初始化工程"></a>2.初始化工程</h3><p>（2）创建一个空目录—-mkdir testDir</p>
-<p>（3）进入此目录 —–cd testDir</p>
-<p>（4）初始化npm配置 —–npm init -y</p>
-<h3 id="3-安装依赖"><a href="#3-安装依赖" class="headerlink" title="3.安装依赖"></a>3.安装依赖</h3><p>（5） 指令格式 —-&gt;&gt; npm install $packageName</p>
-<p> 比如安装 jQuery—- npm install jquery</p>
-<p>执行完成后会生成node_modules文件目录，里面就有我们刚刚安装了jquery<br>同时package.json 中的 dependencies 属性也会多一项jquery的版本描述<br> 还会生成一个 package-lock.json ，对安装的依赖进行版本锁定</p>
-<p>(6) 安装生产阶段的包  —&gt;&gt;npm install jquery –save</p>
-<p> 安装开发阶段的包 npm install jquery –save-dev</p>
-<h3 id="4-卸载依赖"><a href="#4-卸载依赖" class="headerlink" title="4.卸载依赖"></a>4.卸载依赖</h3><p>(7)卸载生产环境的包</p>
-<p>npm uninstall $packageName –save</p>
-<p>(8) 卸载开发环境的包<br>npm uninstall $packageName -dev</p>
-<h2 id="二-npm的理解"><a href="#二-npm的理解" class="headerlink" title="二.npm的理解"></a>二.npm的理解</h2><p>为了解决nodeJs代码部署上的问题</p>
-<h3 id="使用场景："><a href="#使用场景：" class="headerlink" title="使用场景："></a>使用场景：</h3><p>允许用户从NPM服务器下载别人编写的第三方包到本地使用。</p>
-<p>允许用户从NPM服务器下载并安装别人编写的命令行程序到本地使用。</p>
-<p>允许用户将自己编写的包或命令行程序上传到NPM服务器供别人使用。</p>
-<h3 id="NPM-的思路大概是这样的："><a href="#NPM-的思路大概是这样的：" class="headerlink" title="NPM 的思路大概是这样的："></a>NPM 的思路大概是这样的：</h3><p>买个服务器作为代码仓库（registry），在里面放所有需要被<font style="color:red;">共享</font>的代码</p>
-<p>发邮件通知 jQuery、Bootstrap、Underscore 作者使用 npm publish 把代码提交到 registry 上，分别取名 jquery、bootstrap 和 underscore（注意大小写）</p>
-<p>社区里的其他人如果想使用这些代码，就把 jquery、bootstrap 和 underscore 写到 package.json 里，然后运行 npm install ，npm 就会帮他们下载代码</p>
-<p>下载完的代码出现在 node_modules (组件)目录里，可以随意使用了。</p>
-<h2 id="其他学习"><a href="#其他学习" class="headerlink" title="其他学习"></a>其他学习</h2><h3 id="1-git的相关操作"><a href="#1-git的相关操作" class="headerlink" title="1.git的相关操作"></a>1.git的相关操作</h3><p><a target="_blank" rel="noopener" href="https://imgchr.com/i/rurDvF"><img src="https://s3.ax1x.com/2020/12/14/rurDvF.png" alt="rurDvF.png"></a>  </p>
-<h3 id="2-cd-mkdir-rmdir-ls-pwd-操作"><a href="#2-cd-mkdir-rmdir-ls-pwd-操作" class="headerlink" title="2.cd mkdir rmdir ls pwd 操作"></a>2.cd mkdir rmdir ls pwd 操作</h3><p>（1） ls —查看linux文件夹下的文件</p>
-<h4 id="目录的相关操作"><a href="#目录的相关操作" class="headerlink" title="目录的相关操作"></a>目录的相关操作</h4><p>(2) mkdir — make directory.</p>
-<p>-m:配置所创建文件的权限。否则系统使用默认权限</p>
-<p>-p:自行创建多层目录</p>
-<p>(3) rmdir —- remove directory</p>
-<p>-p:连同上层的空目录一并删除。</p>
-<p>注：使用rmdir删除的只能是空目录，否则使用”rm -r“</p>
-<p>(4) cd —- change directory.</p>
-<p>用法很简单 –》 cd [相对路径或绝对路径]</p>
-<p>(5) pwd — print working directory.<br>  显示目前所在目录的命令。</p>
-<p>参数-p：显示实际路径，而不是连接文件的路径。</p>
-
-    
-
-    
-
-    
-
-  </div>
-  <div class="article-info article-info-index">
-    
-    
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">初学</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-    
-	<div class="article-category tagcloud">
-		<i class="icon-book icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/node与vue初学//" class="article-tag-list-link color1">node与vue初学</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-
-    
-    <p class="article-more-link">
-      <a class="article-more-a" href="/2021/03/30/node%E4%B8%8Evue%E5%88%9D%E5%AD%A6/%E7%AC%AC%E4%B8%80%E5%A4%A9%E6%97%A5%E5%BF%97/">展开全文 >></a>
-    </p>
-    
-
-    
-    <div class="clearfix"></div>
-  </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
-    <article id="post-hello-world" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-  
-  
-    <h1 itemprop="name">
-	
-	  <a class="article-title" href="/2021/03/29/hello-world/" target="_blank">Hello World</a>
-  
-    </h1>
-  
-
-
-  
-  
-<a href="/2021/03/29/hello-world/" class="archive-article-date">
-        <time datetime="2021-03-29T08:32:17.659Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-03-29</time>
-</a>
-
-  
-  
-    
-
-  
-  </header>
-  
-  <div class="article-entry" itemprop="articleBody">
-    
-    
-    
-    <p>Welcome to <a target="_blank" rel="noopener" href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a target="_blank" rel="noopener" href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a target="_blank" rel="noopener" href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a target="_blank" rel="noopener" href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p>
-<h2 id="look-look-me"><a href="#look-look-me" class="headerlink" title="look look me"></a>look look me</h2><h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new <span class="string">"My New Post"</span></span><br></pre></td></tr></tbody></table></figure>
-
-<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/writing.html">Writing</a></p>
-<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></tbody></table></figure>
-
-<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/server.html">Server</a></p>
-<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></tbody></table></figure>
-
-<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/generating.html">Generating</a></p>
-<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></tbody></table></figure>
-
-<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
-
-    
-
-    
-
-    
-
-  </div>
-  <div class="article-info article-info-index">
-    
-    
-    
-
-    
-    <p class="article-more-link">
-      <a class="article-more-a" href="/2021/03/29/hello-world/">展开全文 >></a>
-    </p>
-    
-
-    
-    <div class="clearfix"></div>
-  </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
   
     <nav id="page-nav">
-      <a class="extend prev" rel="prev" href="/page/5/">&amp;laquo; Prev</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/4/">4</a><a class="page-number" href="/page/5/">5</a><span class="page-number current">6</span>
+      <a class="extend prev" rel="prev" href="/page/5/">&amp;laquo; Prev</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/4/">4</a><a class="page-number" href="/page/5/">5</a><span class="page-number current">6</span><a class="page-number" href="/page/7/">7</a><a class="extend next" rel="next" href="/page/7/">Next &amp;raquo;</a>
     </nav>
   
 
@@ -768,11 +2139,23 @@ function foo2(value, callback1, callback2) { }
           <ul class="article-tag-list" q-show="showTags">
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">axios</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">初学</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">axios</a>
+                <a href="javascript:void(0)" class="js-tag color1">vue3.0优化分析</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Composition</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">vue3.0核心组件实现</a>
               </li>
             
             <div class="clearfix"></div>
