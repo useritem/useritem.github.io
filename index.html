@@ -285,82 +285,6 @@
 
 
   
-    <article id="post-nes" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-  
-  
-    <h1 itemprop="name">
-	
-	  <a class="article-title" href="/2021/07/10/nes/" target="_blank">nes</a>
-  
-    </h1>
-  
-
-
-  
-  
-<a href="/2021/07/10/nes/" class="archive-article-date">
-        <time datetime="2021-07-10T13:37:23.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-07-10</time>
-</a>
-
-  
-  
-    
-
-  
-  </header>
-  
-  <div class="article-entry" itemprop="articleBody">
-    
-    
-    
-    
-    
-
-    
-
-    
-
-  </div>
-  <div class="article-info article-info-index">
-    
-    
-    
-
-    
-    <p class="article-more-link">
-      <a class="article-more-a" href="/2021/07/10/nes/">展开全文 >></a>
-    </p>
-    
-
-    
-    <div class="clearfix"></div>
-  </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
     <article id="post-vue3.0源码简要分析/vue3.0更多特性实现/v-model双向绑定的实现" class="article article-type-post  article-index" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -3666,6 +3590,403 @@ keyToNewIndexMap.set(nextChild.key, i)
 
 
   
+    <article id="post-vue3.0源码简要分析/Composition API设计/侦听器的实现及应用" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+  
+  
+    <h1 itemprop="name">
+	
+	  <a class="article-title" href="/2021/07/06/vue3.0%E6%BA%90%E7%A0%81%E7%AE%80%E8%A6%81%E5%88%86%E6%9E%90/Composition%20API%E8%AE%BE%E8%AE%A1/%E4%BE%A6%E5%90%AC%E5%99%A8%E7%9A%84%E5%AE%9E%E7%8E%B0%E5%8F%8A%E5%BA%94%E7%94%A8/" target="_blank">侦听器的实现及应用</a>
+  
+    </h1>
+  
+
+
+  
+  
+<a href="/2021/07/06/vue3.0%E6%BA%90%E7%A0%81%E7%AE%80%E8%A6%81%E5%88%86%E6%9E%90/Composition%20API%E8%AE%BE%E8%AE%A1/%E4%BE%A6%E5%90%AC%E5%99%A8%E7%9A%84%E5%AE%9E%E7%8E%B0%E5%8F%8A%E5%BA%94%E7%94%A8/" class="archive-article-date">
+        <time datetime="2021-07-06T14:17:30.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-07-06</time>
+</a>
+
+  
+  
+    
+
+  
+  </header>
+  
+  <div class="article-entry" itemprop="articleBody">
+    
+    
+    
+    <h2 id="前言："><a href="#前言：" class="headerlink" title="前言："></a>前言：</h2><p>侦听器 – 为了观察数据的变化然后并执行一定的逻辑</p>
+<h3 id="vue2-x"><a href="#vue2-x" class="headerlink" title="vue2.x"></a>vue2.x</h3><p>2.x的两种方法：watch选项与$watch API去创建（可进行创建与销毁）</p>
+<p>watch方法：</p>
+<pre><code>export default { 
+     watch: { 
+        a(newVal, oldVal) { 
+          console.log('new: %s,00 old: %s', newVal, oldVal) 
+    } 
+  } 
+} 
+</code></pre>
+<p>$watch API方法：</p>
+<pre><code>const unwatch = vm.$watch('a', function(newVal, oldVal) { 
+      console.log('new: %s, old: %s', newVal, oldVal) 
+}) 
+</code></pre>
+<p>这个方法通过 $watch API 创建的侦听器 watcher 会返回一个 unwatch 函数，你可以随时执行它来停止这个 watcher 对数据的侦听，而对于 watch 选项创建的侦听器，它会随着组件的销毁而停止对数据的侦听。</p>
+<h1 id="一、watch-API-实现监听"><a href="#一、watch-API-实现监听" class="headerlink" title="一、watch API 实现监听"></a>一、watch API 实现监听</h1><h2 id="1、用法"><a href="#1、用法" class="headerlink" title="1、用法:"></a>1、用法:</h2><p>1 监听getter – 返回响应式对象 ，一旦响应式对象更新 — 就会返回对应回调函数。</p>
+<pre><code>import { reactive, watch } from 'vue' 
+const state = reactive({ count: 0 }) 
+watch(() =&gt; state.count, (count, prevCount) =&gt; { 
+      // 当 state.count 更新，会触发此回调函数 
+}) 
+</code></pre>
+<p>2.监听响应式对象 – 对象更新直接执行回调函数</p>
+<pre><code>import { ref, watch } from 'vue' 
+const count = ref(0) 
+watch(count, (count, prevCount) =&gt; { 
+      // 当 count.value 更新，会触发此回调函数 
+}) 
+</code></pre>
+<p>3.多个响应式对象（数组形式）  – 一个更新就执行回调</p>
+<pre><code>import { ref, watch } from 'vue' 
+const count = ref(0) 
+const count2 = ref(1) 
+watch([count, count2], ([count, count2], [prevCount, prevCount2]) =&gt; { 
+      // 当 count.value 或者 count2.value 更新，会触发此回调函数 
+}) 
+</code></pre>
+<h2 id="2、实现原理"><a href="#2、实现原理" class="headerlink" title="2、实现原理"></a>2、实现原理</h2><p>通过联想侦听器与副作用函数effect很像（当侦听的对象或者函数发生了变化则自动执行某个回调函数）， 所以想到其内部实现了effect，看源码发出现其内部主要就是实现了doWatch函数，而doWatch部分确实实现了effect。</p>
+<p>dowatch的具体行为 – <strong>五步走</strong></p>
+<pre><code>function doWatch(source, cb, { immediate, deep, flush, onTrack, onTrigger } = EMPTY_OBJ) { 
+  // 标准化 source 
+  // 构造 applyCb 回调函数 
+  // 创建 scheduler 时序执行函数 
+  // 创建 effect 副作用函数 
+  // 返回侦听器销毁函数 
+}   
+</code></pre>
+<p>具体分析：</p>
+<h2 id=""><a href="#" class="headerlink" title=""></a></h2><h3 id="1-标准化source-–-watch-函数的第一个参数"><a href="#1-标准化source-–-watch-函数的第一个参数" class="headerlink" title="1.标准化source  – watch 函数的第一个参数"></a>1.标准化source  – watch 函数的第一个参数</h3><p>它代表的是监听的<strong>目标是啥（即监听对象的处理）</strong> – 上面说的有三个，所以先应该进行标准化，即根据目标类型。标准成为<strong>getter函数</strong>。（三种情况）</p>
+<ul>
+<li><p>情况一：如果 source 是 ref 对象，则创建一个访问 source.value 的 getter 函数;</p>
+</li>
+<li><p>情况二 ：如果 source 是 reactive 对象，则创建一个访问 source 的 getter 函数，并设置 deep 为 true（deep 的作用我稍后会说）;</p>
+</li>
+<li><p>情况三：如果 source 是一个函数，则会进一步判断第二个参数 cb 是否存在，对于 watch API 来说，cb 是一定存在且是一个回调函数，这种情况下，getter 就是一个简单的对 source 函数封装的函数。</p>
+</li>
+</ul>
+<h4 id="产物getter分析"><a href="#产物getter分析" class="headerlink" title="产物getter分析"></a>产物getter分析</h4><p>getter函数 – 返回响应式对象，在创建effect runner函数时，被作为watcher求值的结果。</p><p style="color: red; font-size: 16px;font-weight: bolder;">每次执行 runner 就会把 getter 函数返回的响应式对象作为 watcher 求值的结果</p><p></p>
+<p>deep == true时 ，表示需要进行traverse 函数<strong>递归每一个value的子属性</strong>，</p>
+<p>注意deeper意思  -=– 表面含义是深度侦听，实际上是通过遍历对象的每一个子属性来实现，—-解决嵌套较深的问题</p>
+<p>例子：</p>
+<pre><code>import { reactive, watch } from 'vue' 
+const state = reactive({ 
+  count: { 
+        a: { 
+      b: 1 
+    } 
+  } 
+}) 
+watch(state.count, (count, prevCount) =&gt; { 
+console.log(count) 
+}) 
+state.count.a.b = 2  
+</code></pre>
+<p>前提：我们知道只有对象属性先被访问触发了依赖收集，再去修改这个属性，才可以通知对应的依赖更新。</p>
+<p>当我们执行 watch 函数的时候，我们知道如果侦听的是一个 reactive 对象，那么内部会设置 deep 为 true，然后执行 traverse 去递归访问对象深层子属性。。。</p>
+<h4 id="性能优化"><a href="#性能优化" class="headerlink" title="性能优化"></a>性能优化</h4><p>减少traverse 函数递归的性能损耗  —- 只监听getter函数</p>
+<pre><code>watch(() =&gt; state.count.a.b, (newVal, oldVal) =&gt; { 
+console.log(newVal) 
+}) 
+state.count.a.b = 2 
+</code></pre>
+<h2 id="-1"><a href="#-1" class="headerlink" title=""></a></h2><h3 id="2-构造回调函数-–-第二个参数-cb（功能实现）"><a href="#2-构造回调函数-–-第二个参数-cb（功能实现）" class="headerlink" title="2.构造回调函数 – 第二个参数 cb（功能实现）"></a>2.构造回调函数 – 第二个参数 cb（功能实现）</h3><p>cb函数参数 — 作用在于侦听一个值的变化，如果值变了就执行回调函数，回调函数里可以访问到新值和旧值。</p>
+<p>cb函数的三个参数 — 第一个 newValue 代表新值；第二个 oldValue 代表旧值。第三个参数 onInvalidate用于注册无效的回调函数。</p>
+<h4 id="构造回调函数的处理逻辑"><a href="#构造回调函数的处理逻辑" class="headerlink" title="构造回调函数的处理逻辑"></a>构造回调函数的处理逻辑</h4><p>主要需要注意的是两个函数，一个是onInvalidate – 注册无效回调函数</p>
+<p>另一个为applyCb  – 表示对cb的封装，*** 这个函数的实现就是“两步走”：</p>
+<ul>
+<li>1、执行runner函数求新值，实际上就是执行前面创建的 getter 函数求新值。</li>
+<li>2、判断，如果是 deep 的情况或者新旧值发生了变化，则执行回调函数 cb，传入参数 newValue 和 oldValue。</li>
+</ul>
+<h4 id="注意"><a href="#注意" class="headerlink" title="注意"></a>注意</h4><p>（1）watch API 和组件实例相关，因为通常我们会在组件的 setup 函数中使用它，当组件销毁后，回调函数 cb 不应该被执行而是直接返回.</p>
+<p>（2）第一次执行的时候旧值的初始值是空数组或者 undefined。执行完回调函数 cb 后，把旧值 oldValue 再更新为 newValue，这是为了下一次的比对</p>
+<h2 id="-2"><a href="#-2" class="headerlink" title=""></a></h2><h3 id="3-创建-scheduler-–-涉及到第三个参数"><a href="#3-创建-scheduler-–-涉及到第三个参数" class="headerlink" title="3.创建 scheduler – 涉及到第三个参数"></a>3.创建 scheduler – 涉及到第三个参数</h3><h4 id="1-scheduler作用"><a href="#1-scheduler作用" class="headerlink" title="1.scheduler作用"></a>1.scheduler作用</h4><p>scheduler 的作用是根据某种<strong>调度的方式</strong>去执行某种函数，在 watch API 中，主要影响到的是回调函数的执行方式。</p>
+<p>options参数表示了 — <strong>配置，决定了watcher的不同的行为</strong>  – 一般就是deeper，即可以对其进行主动设置，不用再要求传入的是 – source==reactive</p>
+<h4 id="2-scheduler的决定因素"><a href="#2-scheduler的决定因素" class="headerlink" title="2.scheduler的决定因素"></a>2.scheduler的决定因素</h4><p>scheduler 的创建逻辑受到了第三个参数 Options 中的 flush 属性值的影响，不同的 flush 决定了 watcher 的执行时机。 – flush的三种情况</p>
+<ul>
+<li><p>当 flush 为 sync 的时候，表示它是一个同步 watcher，即当数据变化时同步执行回调函数。</p>
+</li>
+<li><p>当 flush 为 pre 的时候，回调函数通过 queueJob 的方式在组件更新之前执行，如果组件还没挂载，则同步执行确保回调函数在组件挂载之前执行。</p>
+</li>
+<li><p>如果没设置 flush，那么回调函数通过 queuePostRenderEffect 的方式在组件更新之后执行。</p>
+</li>
+</ul>
+<p style="color: red; font-size: 16px;font-weight: bolder;">watcher 的回调函数是通过一定的调度方式执行的。</p>
+
+<h2 id="-3"><a href="#-3" class="headerlink" title=""></a></h2><h3 id="4、创建effect-–-核心实现"><a href="#4、创建effect-–-核心实现" class="headerlink" title="4、创建effect  – 核心实现"></a>4、创建effect  – 核心实现</h3><p>前面的分析我们提到了 runner，它其实就是 watcher 内部创建的 effect 函数，–核心部分</p>
+<pre><code>const runner = effect(getter, { 
+      // 延时执行 
+  lazy: true, 
+      // computed effect 可以优先于普通的 effect 先运行，比如组件渲染的 effect 
+   computed: true, 
+  onTrack, 
+   onTrigger, 
+  scheduler: applyCb ? () =&gt; scheduler(applyCb) : scheduler 
+}) 
+    // 在组件实例中记录这个 effect 
+recordInstanceBoundEffect(runner) 
+    // 初次执行 
+if (applyCb) { 
+      if (immediate) { 
+    applyCb() 
+  } 
+  else { 
+    // 求旧值 
+oldValue = runner() 
+  } 
+    } 
+else { 
+      // 没有 cb 的情况 
+  runner() 
+} 
+</code></pre>
+<p>主要就是即通过 effect API 创建一个副作用函数 runner ，重要关注就是四大点</p>
+<ul>
+<li>1、runner 是一个 computed effect。（优先执行，即置 flush 为 pre 的时候，watcher 的执行可以优先于组件更新。）</li>
+<li>2、runner 执行的方式</li>
+<li>3、runner 的返回结果 (手动执行 runner 就相当于执行了前面标准化的 getter 函数)</li>
+<li>4、配置了 immediate 的情况</li>
+</ul>
+<h2 id="-4"><a href="#-4" class="headerlink" title=""></a></h2><h3 id="5-返回销毁函数-–-最后一步"><a href="#5-返回销毁函数-–-最后一步" class="headerlink" title="5.返回销毁函数  – 最后一步"></a>5.返回销毁函数  – 最后一步</h3><p>销毁函数内部会执行 stop 方法让 runner 失活，并清理 runner 的相关依赖，这样就可以停止对数据的侦听。并且，如果是在组件中注册的 watcher，也会移除组件 effects 对这个 runner 的引用。</p>
+<h3 id="内部总结"><a href="#内部总结" class="headerlink" title="内部总结"></a>内部总结</h3><p>我们可以侦听响应式数据的变化，内部创建 effect runner，首次执行 runner 做依赖收集，然后在数据发生变化后，以某种调度方式去执行回调函数。</p>
+<h1 id="二、异步"><a href="#二、异步" class="headerlink" title="二、异步"></a>二、异步</h1><p>分析第三步，由于回调函数以一中调度的方式执行的，特别是当 flush 不是 sync 时，它会把回调函数执行的任务推到一个异步队列中执行。，所以开始对异步进行分析</p>
+<h2 id="1、设计原因"><a href="#1、设计原因" class="headerlink" title="1、设计原因"></a>1、设计原因</h2><p>例子</p>
+<pre><code>import { reactive, watch } from 'vue' 
+const state = reactive({ count: 0 }) 
+watch(() =&gt; state.count, (count, prevCount) =&gt; { 
+      console.log(count) 
+}) 
+state.count++ 
+state.count++ 
+state.count++ 
+</code></pre>
+<p>解释：因为在一个 <strong>Tick（宏任务执行的生命周期）</strong>内，即使多次修改侦听的值，它的回调函数也只执行一次</p>
+<p>扩展：</p>
+<p>组件的更新过程是异步的，我们知道修改模板中引用的响应式对象的值时，会触发组件的重新渲染，但是在一个 Tick 内，即使你多次修改多个响应式对象的值，组件的重新渲染也<strong>只执行一次</strong>。这是因为如果每次更新数据都触发组件重新渲染，那么重新渲染的次数和代价都太高了。  – 节约渲染开销</p>
+<h2 id="2、创建"><a href="#2、创建" class="headerlink" title="2、创建"></a>2、创建</h2><p>通过前面的分析我们知道，在创建一个 watcher 时，如果配置 flush 为 pre 或不配置 flush ，那么 watcher 的回调函数就会异步执行。此时分别是通过 queueJob 和 queuePostRenderEffect （见上面第三步）把回调函数推入异步队列中的。</p>
+<p>在不涉及 suspense 的情况下，queuePostRenderEffect 相当于 queuePostFlushCb,</p>
+<pre><code>// 异步任务队列 
+const queue = [] 
+// 队列任务执行完后执行的回调函数队列 
+const postFlushCbs = [] 
+function queueJob(job) { 
+      if (!queue.includes(job)) { 
+    queue.push(job) 
+    queueFlush() 
+  } 
+    } 
+function queuePostFlushCb(cb) { 
+  if (!isArray(cb)) { 
+    postFlushCbs.push(cb) 
+  } 
+  else { 
+    // 如果是数组，把它拍平成一维 
+postFlushCbs.push(...cb) 
+  } 
+  queueFlush() 
+}
+</code></pre>
+<p>实现就是两个维护， queue 数组和一个 postFlushCbs 数组，其中 queue 数组用作异步任务队列， postFlushCbs 数组用作异步任务队列执行完毕后的回调函数队列。且两个任务，第二个任务中有queueFlush 函数</p>
+<p>它的实现也是两个维护，两个函数，两个变量比较重要，主要用来控制异步任务的刷新逻辑 </p>
+<p>isFlushPending 用于判断是否在等待 nextTick 执行 flushJobs，而 isFlushing 是判断是否正在执行任务队列。</p>
+<h2 id="3、执行-–-进行异步执行队列"><a href="#3、执行-–-进行异步执行队列" class="headerlink" title="3、执行  – 进行异步执行队列"></a>3、执行  – 进行异步执行队列</h2><p>也就是flushJobs 函数开始执行</p>
+<p>主要就是先对queueFlush中从参数进行重新赋值，会把 isFlushPending 重置为 false，把 isFlushing 设置为 true 来表示正在执行异步任务队列。</p>
+<p>之后就是对queue进行从小到大的排序并遍历，之后执行flushPostFlushCbs 方法（遍历执行所有推入到 postFlushCbs 的回调函数）</p>
+<p>（执行在这个函数需要注意应该进行拷贝）</p>
+<p>最后遍历完 postFlushCbs 后，再对重置 isFlushing 为 false</p>
+<h3 id="排序的原因"><a href="#排序的原因" class="headerlink" title="排序的原因"></a>排序的原因</h3><ul>
+<li><p>（1）我们创建组件的过程是由父到子，所以创建组件副作用渲染函数也是先父后子，父组件的副作用渲染函数的 effect id 是小于子组件的，每次更新组件也是通过 queueJob 把 effect 推入异步任务队列 queue 中的。所以为了保证先更新父组再更新子组件，要对 queue 做从小到大的排序。</p>
+</li>
+<li><p>（2）如果一个组件在父组件更新过程中被卸载，它自身的更新应该被跳过。所以也应该要保证先更新父组件再更新子组件，要对 queue 做从小到大的排序。</p>
+</li>
+</ul>
+<h2 id="4、检测循环更新"><a href="#4、检测循环更新" class="headerlink" title="4、检测循环更新"></a>4、检测循环更新</h2><p>由于在遍历执行异步任务和回调函数的过程中，都会在非生产环境下执行 checkRecursiveUpdates 检测是否有循环更新</p>
+<h3 id="解决的问题："><a href="#解决的问题：" class="headerlink" title="解决的问题："></a>解决的问题：</h3><p>一旦watcher中进行了更新数据，即再一次<strong>进入回调函数</strong>，如果不控制，就凉凉–回调函数一直执行，直到内存耗尽造成浏览器假死。  （没办法侦听器本质就是数据变化–执行回调）</p>
+<h3 id="解决：-checkRecursiveUpdates-方法："><a href="#解决：-checkRecursiveUpdates-方法：" class="headerlink" title="解决： checkRecursiveUpdates 方法："></a>解决： checkRecursiveUpdates 方法：</h3><pre><code>const RECURSION_LIMIT = 100 
+function checkRecursiveUpdates(seen, fn) { 
+      if (!seen.has(fn)) { 
+    seen.set(fn, 1) 
+  } 
+else { 
+    const count = seen.get(fn) 
+if (count &gt; RECURSION_LIMIT) { 
+  throw new Error('Maximum recursive updates exceeded. ' + 
+    "You may have code that is mutating state in your component's " + 
+    'render function or updated hook or watcher source function.') 
+} 
+else { 
+  seen.set(fn, count + 1) 
+} 
+  } 
+} 
+</code></pre>
+<p>由于当异步函数flushJobs 一开始便创建了 seen（一个 Map 对象）</p>
+<p>在 checkRecursiveUpdates 的时候会把任务添加到 seen 中，记录引用计数 count，初始值为 1，如果 postFlushCbs 再次添加了<strong>相同的任务</strong>，则引用计数 count 加 1，如果 count 大于我们定义的限制 100 ，则说明一直在添加这个相同的任务并超过了 100 次。那么，Vue.js 会抛出这个错误   — 代表正常使用中不应该这样。 例子如下</p>
+<pre><code>import { reactive, watch } from 'vue' 
+const state = reactive({ count: 0 }) 
+watch(() =&gt; state.count, (count, prevCount) =&gt; { 
+      state.count++ 
+      console.log(count) 
+}) 
+state.count++ 
+</code></pre>
+<p>如果你去跑这个示例，你会在控制台看到输出了 101 次值，然后报了错误： Maximum recursive updates exceeded 。</p>
+<h2 id="5、优化：只用一个变量-对于queueFlush-函数"><a href="#5、优化：只用一个变量-对于queueFlush-函数" class="headerlink" title="5、优化：只用一个变量  - 对于queueFlush 函数"></a>5、优化：只用一个变量  - 对于queueFlush 函数</h2><p>首先说明两个变量的作用：</p>
+<ul>
+<li><p>在一个 Tick（宏任务执行的生命周期） 内可以多次添加任务到队列中，但是任务队列会在 nextTick 后执行；</p>
+</li>
+<li><p>在执行任务队列的过程中，也可以添加新的任务到队列中，并且在当前 Tick 去执行剩余的任务队列。</p>
+</li>
+</ul>
+<p>优化 —仅用一个变量</p>
+<pre><code>function queueFlush() { 
+      if (!isFlushing) { 
+isFlushing = true 
+nextTick(flushJobs) 
+  } 
+} 
+function flushJobs(seen) { 
+      let job 
+  if ((process.env.NODE_ENV !== 'production')) { 
+    seen = seen || new Map() 
+  } 
+queue.sort((a, b) =&gt; getId(a) - getId(b)) 
+while ((job = queue.shift()) !== undefined) { 
+if (job === null) { 
+  continue 
+} 
+if ((process.env.NODE_ENV !== 'production')) { 
+  checkRecursiveUpdates(seen, job) 
+} 
+callWithErrorHandling(job, null, 14 /* SCHEDULER */) 
+  } 
+flushPostFlushCbs(seen) 
+if (queue.length || postFlushCbs.length) { 
+flushJobs(seen) 
+  } 
+isFlushing = false 
+} 
+</code></pre>
+<p>可以看到，我们只需要一个 isFlushing 来控制就可以实现相同的功能了。在执行 queueFlush 的时候，判断 isFlushing 为 false，则把它设置为 true，然后 nextTick 会执行 flushJobs。在 flushJobs 函数执行完成的最后，也就是所有的任务（包括后添加的）都执行完毕，再设置 isFlushing 为 false。</p>
+<h1 id="三、扩展：watchEffect-API"><a href="#三、扩展：watchEffect-API" class="headerlink" title="三、扩展：watchEffect API"></a>三、扩展：watchEffect API</h1><p>watchEffect API 的作用是注册一个<strong>副作用函数</strong>，副作用函数内部可以访问到响应式对象，当内部响应式对象变化后再<strong>立即执行</strong>这个函数。</p>
+<pre><code>import { ref, watchEffect } from 'vue' 
+const count = ref(0) 
+watchEffect(() =&gt; console.log(count.value)) 
+count.value++ 
+//输出0 1
+</code></pre>
+<h2 id="1、区分watch-API"><a href="#1、区分watch-API" class="headerlink" title="1、区分watch API"></a>1、区分watch API</h2><ul>
+<li><p>1.<strong>侦听的源不同</strong> 。watch API 可以侦听一个或多个响应式对象，也可以侦听一个 getter 函数，而 watchEffect API 侦听的是<strong>一个普通函数，只要内部访问了响应式对象即可，这个函数并不需要返回响应式对象</strong>。</p>
+</li>
+<li><p>2.<strong>没有回调函数</strong> 。watchEffect API 没有回调函数，副作用函数的内部响应式对象发生变化后，会再次执行这个副作用函数。</p>
+</li>
+<li><p>3.<strong>立即执行</strong> 。watchEffect API 在创建好 watcher 后，会立刻执行它的副作用函数，而 watch API 需要配置 immediate（创建effect，即runner函数时进行配置） 为 true，才会立即执行回调函数。</p>
+</li>
+</ul>
+<h2 id="2、onInvalidate-参数注册无效回调函数"><a href="#2、onInvalidate-参数注册无效回调函数" class="headerlink" title="2、onInvalidate 参数注册无效回调函数"></a>2、onInvalidate 参数注册无效回调函数</h2><p> onInvalidate 在 doWatch 中的实现：</p>
+<pre><code>const onInvalidate = (fn) =&gt; { 
+cleanup = runner.options.onStop = () =&gt; { 
+    callWithErrorHandling(fn, instance, 4 /* WATCH_CLEANUP */); 
+  }; 
+}; 
+</code></pre>
+<p>实际上，当你执行 onInvalidate 的时候，就是注册了一个 cleanup 和 runner 的 onStop 方法，这个方法内部会执行 fn，也就是你注册的无效回调函数。</p>
+<p>也就是说当响应式数据发生变化，会执行 cleanup 方法，当 watcher 被停止，会执行 onStop 方法，这两者都会执行注册的无效回调函数 fn。</p>
+<p>通过这种方式，Vue.js 就很好地实现了 watcher 注册无效回调函数的需求。</p>
+<h3 id="例子："><a href="#例子：" class="headerlink" title="例子："></a>例子：</h3><p>有些时候，watchEffect 会注册一个副作用函数，在函数内部可以做一些异步操作，但是当这个 watcher 停止后，如果我们想去对这个异步操作做一些额外事情（比如取消这个异步操作），我们可以通过 onInvalidate 参数注册一个无效函数。</p>
+<pre><code>import {ref, watchEffect } from 'vue' 
+const id = ref(0) 
+watchEffect(onInvalidate =&gt; { 
+  // 执行异步操作 
+  const token = performAsyncOperation(id.value) 
+  onInvalidate(() =&gt; { 
+    // 如果 id 发生变化或者 watcher 停止了，则执行逻辑取消前面的异步操作 
+    token.cancel() 
+      }) 
+}) 
+</code></pre>
+
+    
+
+    
+
+    
+
+  </div>
+  <div class="article-info article-info-index">
+    
+    
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">Composition</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+    
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/vue3-0源码简析//" class="article-tag-list-link color1">vue3.0源码简析</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+
+    
+    <p class="article-more-link">
+      <a class="article-more-a" href="/2021/07/06/vue3.0%E6%BA%90%E7%A0%81%E7%AE%80%E8%A6%81%E5%88%86%E6%9E%90/Composition%20API%E8%AE%BE%E8%AE%A1/%E4%BE%A6%E5%90%AC%E5%99%A8%E7%9A%84%E5%AE%9E%E7%8E%B0%E5%8F%8A%E5%BA%94%E7%94%A8/">展开全文 >></a>
+    </p>
+    
+
+    
+    <div class="clearfix"></div>
+  </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
   
     <nav id="page-nav">
       <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/7/">7</a><a class="extend next" rel="next" href="/page/2/">Next &amp;raquo;</a>
@@ -3680,7 +4001,7 @@ keyToNewIndexMap.set(nextChild.key, i)
   <div class="outer">
     <div id="footer-info">
     	<div class="footer-left">
-    		&copy; 2021 <a href="https://useritem.github.io/" target="_blank">〃不枉俗尘づ</a>
+    		&copy; 2021-2023 <a href="https://useritem.github.io/" target="_blank">〃不枉俗尘づ</a>
     	</div>
       	<div class="footer-right">
 			
@@ -3812,11 +4133,11 @@ keyToNewIndexMap.set(nextChild.key, i)
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Composition</a>
+                <a href="javascript:void(0)" class="js-tag color3">vue3.0核心组件实现</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">vue3.0核心组件实现</a>
+                <a href="javascript:void(0)" class="js-tag color2">Composition</a>
               </li>
              
               <li class="article-tag-list-item">

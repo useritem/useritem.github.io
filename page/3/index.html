@@ -285,209 +285,6 @@
 
 
   
-    <article id="post-jquery学习/jq3-选择器，css类与动画" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-  
-  
-    <h1 itemprop="name">
-	
-	  <a class="article-title" href="/2021/05/25/jquery%E5%AD%A6%E4%B9%A0/jq3-%E9%80%89%E6%8B%A9%E5%99%A8%EF%BC%8Ccss%E7%B1%BB%E4%B8%8E%E5%8A%A8%E7%94%BB/" target="_blank">jq3 -- 选择器，css类与动画</a>
-  
-    </h1>
-  
-
-
-  
-  
-<a href="/2021/05/25/jquery%E5%AD%A6%E4%B9%A0/jq3-%E9%80%89%E6%8B%A9%E5%99%A8%EF%BC%8Ccss%E7%B1%BB%E4%B8%8E%E5%8A%A8%E7%94%BB/" class="archive-article-date">
-        <time datetime="2021-05-25T12:48:43.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-05-25</time>
-</a>
-
-  
-  
-    
-
-  
-  </header>
-  
-  <div class="article-entry" itemprop="articleBody">
-    
-    
-    
-    <h1 id="一、节点的操作"><a href="#一、节点的操作" class="headerlink" title="一、节点的操作"></a>一、节点的操作</h1><h2 id="1、节点的创建"><a href="#1、节点的创建" class="headerlink" title="1、节点的创建"></a>1、节点的创建</h2><h3 id="原生js的方法："><a href="#原生js的方法：" class="headerlink" title="原生js的方法："></a>原生js的方法：</h3><ul>
-<li>document.write(‘’); 可以解析标签，但是可能覆盖掉页面</li>
-<li>innerHTML =””   也会进行覆盖</li>
-<li>document.createElement(); — 只存在于内存的标签，需要追加元素：appendChild</li>
-</ul>
-<h3 id="（1）html"><a href="#（1）html" class="headerlink" title="（1）html()"></a>（1）html()</h3><p>可以用于设置或者获取内容的</p>
-<h4 id="1-1、当html不给参数表示获取类"><a href="#1-1、当html不给参数表示获取类" class="headerlink" title="1.1、当html不给参数表示获取类"></a>1.1、当html不给参数表示获取类</h4><pre><code> console.log($('div').html())
-</code></pre>
-<h4 id="1-2、当html给参数，会进行标签解析和之前的“覆盖”"><a href="#1-2、当html给参数，会进行标签解析和之前的“覆盖”" class="headerlink" title="1.2、当html给参数，会进行标签解析和之前的“覆盖”"></a>1.2、当html给参数，会进行标签解析和之前的“覆盖”</h4><pre><code>$('div').html('我会&lt;h1&gt;覆盖&lt;/h1&gt;')
-</code></pre>
-<h3 id="2"><a href="#2" class="headerlink" title="(2)$()"></a>(2)$()</h3><p>需要注意的是：</p>
-<p>$()方法，只是<strong>在内容中设置</strong>，不会自动解析到页面上</p>
-<p>如果后面需要进行添加的话，需要手动放置，比如append等（见后）</p>
-<pre><code>let link = $('&lt;div&gt;&lt;12345/div&gt;')
-</code></pre>
-<h2 id="2、节点操作："><a href="#2、节点操作：" class="headerlink" title="2、节点操作："></a>2、节点操作：</h2><h3 id="（1）节点的添加-A-某-B"><a href="#（1）节点的添加-A-某-B" class="headerlink" title="（1）节点的添加 A.某.B"></a>（1）节点的添加 A.某.B</h3><p>规律：</p>
-<ul>
-<li><p>1、对于新建元素 —  直接进行添加</p>
-</li>
-<li><p>2、把A本身已有的标签添加到ul中，代表<strong>剪切</strong>，之后进行添加</p>
-</li>
-<li><p>3、把其他地方的元素进行添加，那么相当于<strong>从其他地方剪切到该位置</strong></p>
-</li>
-</ul>
-<h4 id="1、append方法（A-B建立完后为父子关系）"><a href="#1、append方法（A-B建立完后为父子关系）" class="headerlink" title="1、append方法（A,B建立完后为父子关系）"></a>1、append方法（A,B建立完后为父子关系）</h4><p>作为最后一个子元素进行添加，以上面三种规律为例：</p>
-<p>1：新建元素—  作为最后一个子元素进行添加</p>
-<pre><code>$('.btn1').click(function(){
-    var news = $('&lt;li&gt;xinjian&lt;/li&gt;')
-    $('.ul1').append(news)
-}
-</code></pre>
-<p>2 把b本身已有的标签添加到ul中，代表剪切作为最后一个元素添加</p>
-<pre><code>    var li3 = $('#li3')
-    $('.ul1').append(li3)
-</code></pre>
-<p>3.吧ul2中的元素添加到ul1中去 — 直接将ul2中进行剪切后对齐添加</p>
-<pre><code>    var li2 = $('#li2')
-    $('.ul1').append(li2)
-})
-</code></pre>
-<h4 id="2、prepend方法（A-B建立完后为父子关系）"><a href="#2、prepend方法（A-B建立完后为父子关系）" class="headerlink" title="2、prepend方法（A,B建立完后为父子关系）"></a>2、prepend方法（A,B建立完后为父子关系）</h4><p>作为第一个元素添加,其他道理是一样的：</p>
-<pre><code>$('.btn2').click(function(){
-    var news = $('&lt;li&gt;xinjian&lt;/li&gt;')
-    $('.ul1').prepend(news)
-})
-</code></pre>
-<h4 id="3、before-（A-B-兄弟关系）"><a href="#3、before-（A-B-兄弟关系）" class="headerlink" title="3、before()（A B 兄弟关系）"></a>3、before()（A B 兄弟关系）</h4><p>before()  添加的方法—  添加到前面；</p>
-<p>如果是 A.before（元素B）; //将元素B添加到元素A的前面，作为兄弟（之前作为的是子元素）</p>
-<p>其他的道理一样，比如剪切什么的</p>
-<pre><code>$('.btn3').click(function(){
-    var news = $('&lt;li&gt;xinjian&lt;/li&gt;')
-    $('.ul1').before(news)
-}）
-</code></pre>
-<h4 id="4、after-（A-B-兄弟关系）"><a href="#4、after-（A-B-兄弟关系）" class="headerlink" title="4、after()（A B 兄弟关系）"></a>4、after()（A B 兄弟关系）</h4><p>after()  添加的方法—  添加到后面；</p>
-<pre><code>    $('.btn4').click(function(){
-    var news = $('&lt;li&gt;xinjian&lt;/li&gt;')
-    $('.ul1').after(news)
-})
-</code></pre>
-<h4 id="5、子元素-appendTo-父元素"><a href="#5、子元素-appendTo-父元素" class="headerlink" title="5、子元素.appendTo(父元素)"></a>5、子元素.appendTo(父元素)</h4><p>这是通过子元素点出来的！</p>
-<p>把子元素作为父元素最后一个元素添加，—–和append效果一样，但是就是看谁给的方法</p>
-<pre><code>$('.btn5').click(function(){
-    var news = $('&lt;li&gt;xinjian&lt;/li&gt;')
-    news.appendTo($('.ul1'))
-})
-</code></pre>
-<div style="border-top: 5px solid #008c8c; margin:20px 0  "></div>  
-
-<h2 id="3、元素删除"><a href="#3、元素删除" class="headerlink" title="3、元素删除"></a>3、元素删除</h2><h3 id="1、元素完全清空-—-empty"><a href="#1、元素完全清空-—-empty" class="headerlink" title="1、元素完全清空 — empty()"></a>1、元素完全清空 — empty()</h3><p>实际上：htm(“”)方法也可以进行完全删除</p>
-<pre><code>$('.ul1').html('') 
-</code></pre>
-<p>但是： 会清空里面了展示内容，但是实际还在，比如事件啥的，所以不安全，会造成内存泄漏</p>
-<p>而对于empty()方法来说</p>
-<p>他的实质是对每个元素实现了remove操作，并且对函数也进行了清除！，clearfix，但是此时内容中还有ul</p>
-<p>所以完全清除推荐使用empty()</p>
-<h3 id="2、移除一个元素-remove"><a href="#2、移除一个元素-remove" class="headerlink" title="2、移除一个元素 remove()"></a>2、移除一个元素 remove()</h3><pre><code>$('.btnn2').click(function(){
-    $('#li3').remove();  //自杀
-    // 但是注意remove之后，内容直接就不在了
-    $('#li2').parent().remove() //移除父元素
-})
-</code></pre>
-<h3 id="注意："><a href="#注意：" class="headerlink" title="注意："></a>注意：</h3><p>删除操作时：A.删除()，代表删除其本身全部，所以可以理解为<strong>自杀</strong></p>
-<h2 id="4、节点克隆clone"><a href="#4、节点克隆clone" class="headerlink" title="4、节点克隆clone()"></a>4、节点克隆clone()</h2><p> jq中的克隆节点，仅仅存在于内存中，如果需要在页面中显示，需要追加到页面上！！</p>
-<p>其次克隆方法的参数，无论是true还是false，都会clone到后代节点,（就是后面的子节点也会被clone上）</p>
-<p>参数控制：方法是否克隆：</p>
-<ul>
-<li><p>true: 被克隆的事件也会被克隆上去</p>
-</li>
-<li><p>false：事件不会被克隆上去</p>
-</li>
-</ul>
-<h4 id=""><a href="#" class="headerlink" title=""></a></h4><pre><code>$('.clone').click(function(){
-    var clone  = $('.div1').clone(true)
-    // 把克隆节点进行追加
-    $('.div1').parent().append(clone)
-
-})
-</code></pre>
-<h2 id="2、获取表单的方法val-："><a href="#2、获取表单的方法val-：" class="headerlink" title="2、获取表单的方法val()："></a>2、获取表单的方法val()：</h2><p>原生的js通过value值，来实现对input值的获取</p>
-<p>jq通过  —-  val() 来获取表单元素的值</p>
-<pre><code>&lt;input type="button" id="input1" value="naniu"&gt;
-&lt;input type="text" id="input2"&gt;
-
-    $('#input1').click(function(){
-    // 1、获取  val()方法不给参数，就是代表获取
-    alert($('#input2').val())
-    // 2、设置  对val给了参数，就表示了设置表单元素的值
-    $('#input2').val('hahaha')
-})
-</code></pre>
-<p>原生js的value实现：</p>
-<pre><code>    let inputs = document.getElementsByTagName('input')[2]
-    alert(inputs.value)
-    inputs.value = 'hehe' 也可以进行赋值    
-</code></pre>
-
-    
-
-    
-
-    
-
-  </div>
-  <div class="article-info article-info-index">
-    
-    
-    
-	<div class="article-category tagcloud">
-		<i class="icon-book icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/jQuery//" class="article-tag-list-link color2">jQuery</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-
-    
-    <p class="article-more-link">
-      <a class="article-more-a" href="/2021/05/25/jquery%E5%AD%A6%E4%B9%A0/jq3-%E9%80%89%E6%8B%A9%E5%99%A8%EF%BC%8Ccss%E7%B1%BB%E4%B8%8E%E5%8A%A8%E7%94%BB/">展开全文 >></a>
-    </p>
-    
-
-    
-    <div class="clearfix"></div>
-  </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
     <article id="post-jquery学习/jq2-class绑定与动画" class="article article-type-post  article-index" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -2357,6 +2154,237 @@ devServer:{
 
 
   
+    <article id="post-js学习/js学习9" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+  
+  
+    <h1 itemprop="name">
+	
+	  <a class="article-title" href="/2021/04/20/js%E5%AD%A6%E4%B9%A0/js%E5%AD%A6%E4%B9%A09/" target="_blank">js学习9</a>
+  
+    </h1>
+  
+
+
+  
+  
+<a href="/2021/04/20/js%E5%AD%A6%E4%B9%A0/js%E5%AD%A6%E4%B9%A09/" class="archive-article-date">
+        <time datetime="2021-04-20T08:04:47.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-04-20</time>
+</a>
+
+  
+  
+    
+
+  
+  </header>
+  
+  <div class="article-entry" itemprop="articleBody">
+    
+    
+    
+    <h1 id="一、类"><a href="#一、类" class="headerlink" title="一、类"></a>一、类</h1><h2 id="1、介绍"><a href="#1、介绍" class="headerlink" title="1、介绍"></a>1、介绍</h2><p>es6所引入的类class，可以理解为新的基础性的语法糖结构，虽然是面向对象编程，但是背后仍是原型与构造函数的概念。</p>
+<h2 id="2、特点"><a href="#2、特点" class="headerlink" title="2、特点"></a>2、特点</h2><p>（1）类的声明不可以提升</p>
+<p>（2）类受块级作用域限制</p>
+<h2 id="3、构造"><a href="#3、构造" class="headerlink" title="3、构造"></a>3、构造</h2><pre><code>class a{
+    constructor(name){
+        this.name = name
+    //    sayhello = function(){
+    //        console.log('he')
+    //    }
+    //不能在构造函数中定义属性
+    }
+    age = 
+    sayname(){
+            console.log(this.name)
+    }
+}
+let bob = new a('bob')
+bob.sayname()
+</code></pre>
+<h3 id="注意"><a href="#注意" class="headerlink" title="注意"></a>注意</h3><p>类构造函数必须为new，如果没有new会报错，且constructor中只可以写属性，new时<strong>自动调用</strong></p>
+<h3 id="特殊："><a href="#特殊：" class="headerlink" title="特殊："></a>特殊：</h3><pre><code>class person{
+    say(){
+        console.log(`名字是${person.tname} 年龄是${this.age} my的名字是${this.name} ${person.name}`)
+    }
+}
+person.name = 'bob'
+person.tname = 'bob'
+person.prototype.age = 15
+let a = new person()
+a.name = 'a'
+ a.tname = 'a'  //无用
+a.say()
+名字是bob 年龄是15 my的名字是a person
+</code></pre>
+<p>解释：函数外部可以<strong>手动添加成员数据</strong>，且在 person.prototype.age上添加属性，<strong>实例也可以使用</strong></p>
+<p>如果直接person.tname = ‘bob’这样加，<strong>实例无法对属性变化</strong>，</p>
+<p>且注意名字person.name，这是自身属性，无法变，指向类名！！</p>
+<h2 id="4、关键字"><a href="#4、关键字" class="headerlink" title="4、关键字"></a>4、关键字</h2><p>extends  —继承</p>
+<p>super（）–  这个行为等同于调用构造函数</p>
+<pre><code>class father{
+    constructor(age){
+        this.age = age
+    }
+}
+class me extends father{
+    // constructor(age){
+    //     super(age)
+    // }
+    // super()   不能单独用
+    sayage(){
+        console.log(this.age)
+        // console.log(super)
+    }
+}
+let a = new me('aa')
+a.sayage()
+console.log(a instanceof me)     //true
+console.log(a instanceof father)   //true
+</code></pre>
+<p>当没有使用constructor函数时，系统自动调用父类方法</p>
+<p>当使用super时，也要注意传入参数（向father中）</p>
+<h1 id="二、代理"><a href="#二、代理" class="headerlink" title="二、代理"></a>二、代理</h1><h2 id="1、理解"><a href="#1、理解" class="headerlink" title="1、理解"></a>1、理解</h2><p>代理可以理解为对象的替身，可以对处理对象的方法进行处理：</p>
+<pre><code>const temple = {
+    name:'bob',
+    sex:'nan'
+}
+// 处理对象:
+const handler = {
+    // 这个捕获器名字也是固定的
+    get(trap,prop,rece){
+        console.log(trap)// {name: "bob", sex: "nan"}
+        console.log(prop)   //name,第二次sex
+        console.log(rece) //{name: "bob", sex: "nan"}
+    }
+}
+// 代理对象,调用Proxy函数时,注意
+// 1必须传入原对象,以及处理对象
+//2传入时,注意名字同上
+const proxy = new Proxy(temple,handler)
+proxy.name 
+proxy.sex 
+//同上都被get事件捕获,执行get事件
+proxy.age =23
+console.log(temple.age)  //23
+</code></pre>
+<h1 id="三、函数"><a href="#三、函数" class="headerlink" title="三、函数"></a>三、函数</h1><h2 id="1、特殊的理解"><a href="#1、特殊的理解" class="headerlink" title="1、特殊的理解"></a>1、特殊的理解</h2><p>由于函数的实际是对象，所以函数名实际表示的是<strong>对象的指针</strong>，可以通过函数名进行指针的传递</p>
+<pre><code>function fun(){
+    console.log('fun')
+}
+fun()
+const fun1 = fun  //使fun1指向函数对象
+fun = null
+fun1()   //fun
+fun()  //报错
+</code></pre>
+<p>fun = null 这可以切断函数名与函数的关联</p>
+<h3 id="注意-1"><a href="#注意-1" class="headerlink" title="注意"></a>注意</h3><p>箭头函数中的大括号表示<strong>函数体</strong>，如果省略表示隐式返回这行代码值</p>
+<pre><code>let doubel = x =&gt;x*3
+console.log(doubel(4))  //12
+</code></pre>
+<h2 id="2、实参与形参"><a href="#2、实参与形参" class="headerlink" title="2、实参与形参"></a>2、实参与形参</h2><p>直接上例子：</p>
+<pre><code>    function fun(num1,num2){
+        console.log('----------------')
+        console.log(num1+'   '+num2)
+        arguments[1] = 23   
+        console.log(num1+'   '+num2)
+        num2 = 334
+        console.log(num1+'   '+num2)
+        console.log(arguments[0]+'   '+arguments[1])
+        
+    }
+    fun(1)
+    fun(1,4)
+</code></pre>
+<p><a target="_blank" rel="noopener" href="https://imgtu.com/i/c7IjxS"><img src="https://z3.ax1x.com/2021/04/20/c7IjxS.png" alt="c7IjxS.png"></a></p>
+<h3 id="注意-2"><a href="#注意-2" class="headerlink" title="注意"></a>注意</h3><p>（1）当参数数目一样时，调用实参与形参一样的，且会保持同步的关系</p>
+<p>（2）但是当实参数目少时，改变argument时，<strong>不会影响形参nums2</strong>，当再次设置nums2值时，两者已经不同步</p>
+<p>（3）当然了，当实参数目要多时，那么等于实参数目的部分和情况一一样</p>
+<h2 id="3、重载？"><a href="#3、重载？" class="headerlink" title="3、重载？"></a>3、重载？</h2><pre><code>    function fun(a){
+        console.log(a)
+    }
+    function fun(a,b){
+        console.log('2222')
+        console.log(a+b+999)
+    }
+    fun(3,4)  //2222  1006
+    fun(2)  // 2222 NaN
+</code></pre>
+<p>由于函数名相当于指针，所以函数<strong>没有重载！！！</strong></p>
+<p>且注意函数会提升变量，且<strong>优先级高于var</strong></p>
+<h2 id="4、默认参数"><a href="#4、默认参数" class="headerlink" title="4、默认参数"></a>4、默认参数</h2><pre><code>  const fun = function(name = 'mike',name1 = '23',name2 = name){
+        console.log(name+'   '+name1+'   '+name2)  //mike 23 mike
+    }
+    fun()
+</code></pre>
+<p>当没有传入参数时，可以使用默认参数进行赋值，并且argumens<strong>不会对默认参数进行读取</strong></p>
+<p>默认参数中可以用<strong>函数或者之前声明的变量</strong>，</p>
+<h3 id="注意："><a href="#注意：" class="headerlink" title="注意："></a>注意：</h3><p>（1）使用函数做参数时，仅有fun被调用<strong>并且</strong>无参数时，该函数才会调用</p>
+<p>（2）只能是之前的，否则报错：</p>
+<pre><code>  const fun = function(name = 'mike',name1 = name2,name2 = name){
+        console.log(name+'   '+name1+'   '+name2)  //mike 23 mike
+   }
+   fun()  //name1 is undefined
+</code></pre>
+
+    
+
+    
+
+    
+
+  </div>
+  <div class="article-info article-info-index">
+    
+    
+    
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/js学习//" class="article-tag-list-link color5">js学习</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+
+    
+    <p class="article-more-link">
+      <a class="article-more-a" href="/2021/04/20/js%E5%AD%A6%E4%B9%A0/js%E5%AD%A6%E4%B9%A09/">展开全文 >></a>
+    </p>
+    
+
+    
+    <div class="clearfix"></div>
+  </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
   
     <nav id="page-nav">
       <a class="extend prev" rel="prev" href="/page/2/">&amp;laquo; Prev</a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span><a class="page-number" href="/page/4/">4</a><a class="page-number" href="/page/5/">5</a><span class="space">&hellip;</span><a class="page-number" href="/page/7/">7</a><a class="extend next" rel="next" href="/page/4/">Next &amp;raquo;</a>
@@ -2371,7 +2399,7 @@ devServer:{
   <div class="outer">
     <div id="footer-info">
     	<div class="footer-left">
-    		&copy; 2021 <a href="https://useritem.github.io/" target="_blank">〃不枉俗尘づ</a>
+    		&copy; 2021-2023 <a href="https://useritem.github.io/" target="_blank">〃不枉俗尘づ</a>
     	</div>
       	<div class="footer-right">
 			
@@ -2503,11 +2531,11 @@ devServer:{
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Composition</a>
+                <a href="javascript:void(0)" class="js-tag color3">vue3.0核心组件实现</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">vue3.0核心组件实现</a>
+                <a href="javascript:void(0)" class="js-tag color2">Composition</a>
               </li>
              
               <li class="article-tag-list-item">

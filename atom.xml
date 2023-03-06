@@ -6,7 +6,7 @@
   <link href="https://useritem.github.io/atom.xml" rel="self"/>
   
   <link href="https://useritem.github.io/"/>
-  <updated>2021-07-10T13:37:50.360Z</updated>
+  <updated>2021-07-10T12:49:45.124Z</updated>
   <id>https://useritem.github.io/</id>
   
   <author>
@@ -15,19 +15,6 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
-  
-  <entry>
-    <title>nes</title>
-    <link href="https://useritem.github.io/2021/07/10/nes/"/>
-    <id>https://useritem.github.io/2021/07/10/nes/</id>
-    <published>2021-07-10T13:37:23.000Z</published>
-    <updated>2021-07-10T13:37:50.360Z</updated>
-    
-    
-    
-    
-    
-  </entry>
   
   <entry>
     <title>v-model双向绑定的实现</title>
@@ -481,6 +468,28 @@
       
       
     <summary type="html">&lt;h1 id=&quot;一、属性控制&quot;&gt;&lt;a href=&quot;#一、属性控制&quot; class=&quot;headerlink&quot; title=&quot;一、属性控制&quot;&gt;&lt;/a&gt;一、属性控制&lt;/h1&gt;&lt;h2 id=&quot;1、属性的设置与获取&quot;&gt;&lt;a href=&quot;#1、属性的设置与获取&quot; class=&quot;headerli</summary>
+      
+    
+    
+    
+    <category term="jQuery" scheme="https://useritem.github.io/categories/jQuery/"/>
+    
+    
+  </entry>
+  
+  <entry>
+    <title>jq3 -- 选择器，css类与动画</title>
+    <link href="https://useritem.github.io/2021/05/25/jquery%E5%AD%A6%E4%B9%A0/jq3-%E9%80%89%E6%8B%A9%E5%99%A8%EF%BC%8Ccss%E7%B1%BB%E4%B8%8E%E5%8A%A8%E7%94%BB/"/>
+    <id>https://useritem.github.io/2021/05/25/jquery%E5%AD%A6%E4%B9%A0/jq3-%E9%80%89%E6%8B%A9%E5%99%A8%EF%BC%8Ccss%E7%B1%BB%E4%B8%8E%E5%8A%A8%E7%94%BB/</id>
+    <published>2021-05-25T12:48:43.000Z</published>
+    <updated>2021-05-25T12:52:05.852Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="一、节点的操作"><a href="#一、节点的操作" class="headerlink" title="一、节点的操作"></a>一、节点的操作</h1><h2 id="1、节点的创建"><a href="#1、节点的创建" class="headerlink" title="1、节点的创建"></a>1、节点的创建</h2><h3 id="原生js的方法："><a href="#原生js的方法：" class="headerlink" title="原生js的方法："></a>原生js的方法：</h3><ul><li>document.write(‘’); 可以解析标签，但是可能覆盖掉页面</li><li>innerHTML =””   也会进行覆盖</li><li>document.createElement(); — 只存在于内存的标签，需要追加元素：appendChild</li></ul><h3 id="（1）html"><a href="#（1）html" class="headerlink" title="（1）html()"></a>（1）html()</h3><p>可以用于设置或者获取内容的</p><h4 id="1-1、当html不给参数表示获取类"><a href="#1-1、当html不给参数表示获取类" class="headerlink" title="1.1、当html不给参数表示获取类"></a>1.1、当html不给参数表示获取类</h4><pre><code> console.log($('div').html())</code></pre><h4 id="1-2、当html给参数，会进行标签解析和之前的“覆盖”"><a href="#1-2、当html给参数，会进行标签解析和之前的“覆盖”" class="headerlink" title="1.2、当html给参数，会进行标签解析和之前的“覆盖”"></a>1.2、当html给参数，会进行标签解析和之前的“覆盖”</h4><pre><code>$('div').html('我会&lt;h1&gt;覆盖&lt;/h1&gt;')</code></pre><h3 id="2"><a href="#2" class="headerlink" title="(2)$()"></a>(2)$()</h3><p>需要注意的是：</p><p>$()方法，只是<strong>在内容中设置</strong>，不会自动解析到页面上</p><p>如果后面需要进行添加的话，需要手动放置，比如append等（见后）</p><pre><code>let link = $('&lt;div&gt;&lt;12345/div&gt;')</code></pre><h2 id="2、节点操作："><a href="#2、节点操作：" class="headerlink" title="2、节点操作："></a>2、节点操作：</h2><h3 id="（1）节点的添加-A-某-B"><a href="#（1）节点的添加-A-某-B" class="headerlink" title="（1）节点的添加 A.某.B"></a>（1）节点的添加 A.某.B</h3><p>规律：</p><ul><li><p>1、对于新建元素 —  直接进行添加</p></li><li><p>2、把A本身已有的标签添加到ul中，代表<strong>剪切</strong>，之后进行添加</p></li><li><p>3、把其他地方的元素进行添加，那么相当于<strong>从其他地方剪切到该位置</strong></p></li></ul><h4 id="1、append方法（A-B建立完后为父子关系）"><a href="#1、append方法（A-B建立完后为父子关系）" class="headerlink" title="1、append方法（A,B建立完后为父子关系）"></a>1、append方法（A,B建立完后为父子关系）</h4><p>作为最后一个子元素进行添加，以上面三种规律为例：</p><p>1：新建元素—  作为最后一个子元素进行添加</p><pre><code>$('.btn1').click(function(){    var news = $('&lt;li&gt;xinjian&lt;/li&gt;')    $('.ul1').append(news)}</code></pre><p>2 把b本身已有的标签添加到ul中，代表剪切作为最后一个元素添加</p><pre><code>    var li3 = $('#li3')    $('.ul1').append(li3)</code></pre><p>3.吧ul2中的元素添加到ul1中去 — 直接将ul2中进行剪切后对齐添加</p><pre><code>    var li2 = $('#li2')    $('.ul1').append(li2)})</code></pre><h4 id="2、prepend方法（A-B建立完后为父子关系）"><a href="#2、prepend方法（A-B建立完后为父子关系）" class="headerlink" title="2、prepend方法（A,B建立完后为父子关系）"></a>2、prepend方法（A,B建立完后为父子关系）</h4><p>作为第一个元素添加,其他道理是一样的：</p><pre><code>$('.btn2').click(function(){    var news = $('&lt;li&gt;xinjian&lt;/li&gt;')    $('.ul1').prepend(news)})</code></pre><h4 id="3、before-（A-B-兄弟关系）"><a href="#3、before-（A-B-兄弟关系）" class="headerlink" title="3、before()（A B 兄弟关系）"></a>3、before()（A B 兄弟关系）</h4><p>before()  添加的方法—  添加到前面；</p><p>如果是 A.before（元素B）; //将元素B添加到元素A的前面，作为兄弟（之前作为的是子元素）</p><p>其他的道理一样，比如剪切什么的</p><pre><code>$('.btn3').click(function(){    var news = $('&lt;li&gt;xinjian&lt;/li&gt;')    $('.ul1').before(news)}）</code></pre><h4 id="4、after-（A-B-兄弟关系）"><a href="#4、after-（A-B-兄弟关系）" class="headerlink" title="4、after()（A B 兄弟关系）"></a>4、after()（A B 兄弟关系）</h4><p>after()  添加的方法—  添加到后面；</p><pre><code>    $('.btn4').click(function(){    var news = $('&lt;li&gt;xinjian&lt;/li&gt;')    $('.ul1').after(news)})</code></pre><h4 id="5、子元素-appendTo-父元素"><a href="#5、子元素-appendTo-父元素" class="headerlink" title="5、子元素.appendTo(父元素)"></a>5、子元素.appendTo(父元素)</h4><p>这是通过子元素点出来的！</p><p>把子元素作为父元素最后一个元素添加，—–和append效果一样，但是就是看谁给的方法</p><pre><code>$('.btn5').click(function(){    var news = $('&lt;li&gt;xinjian&lt;/li&gt;')    news.appendTo($('.ul1'))})</code></pre><div style="border-top: 5px solid #008c8c; margin:20px 0  "></div>  <h2 id="3、元素删除"><a href="#3、元素删除" class="headerlink" title="3、元素删除"></a>3、元素删除</h2><h3 id="1、元素完全清空-—-empty"><a href="#1、元素完全清空-—-empty" class="headerlink" title="1、元素完全清空 — empty()"></a>1、元素完全清空 — empty()</h3><p>实际上：htm(“”)方法也可以进行完全删除</p><pre><code>$('.ul1').html('') </code></pre><p>但是： 会清空里面了展示内容，但是实际还在，比如事件啥的，所以不安全，会造成内存泄漏</p><p>而对于empty()方法来说</p><p>他的实质是对每个元素实现了remove操作，并且对函数也进行了清除！，clearfix，但是此时内容中还有ul</p><p>所以完全清除推荐使用empty()</p><h3 id="2、移除一个元素-remove"><a href="#2、移除一个元素-remove" class="headerlink" title="2、移除一个元素 remove()"></a>2、移除一个元素 remove()</h3><pre><code>$('.btnn2').click(function(){    $('#li3').remove();  //自杀    // 但是注意remove之后，内容直接就不在了    $('#li2').parent().remove() //移除父元素})</code></pre><h3 id="注意："><a href="#注意：" class="headerlink" title="注意："></a>注意：</h3><p>删除操作时：A.删除()，代表删除其本身全部，所以可以理解为<strong>自杀</strong></p><h2 id="4、节点克隆clone"><a href="#4、节点克隆clone" class="headerlink" title="4、节点克隆clone()"></a>4、节点克隆clone()</h2><p> jq中的克隆节点，仅仅存在于内存中，如果需要在页面中显示，需要追加到页面上！！</p><p>其次克隆方法的参数，无论是true还是false，都会clone到后代节点,（就是后面的子节点也会被clone上）</p><p>参数控制：方法是否克隆：</p><ul><li><p>true: 被克隆的事件也会被克隆上去</p></li><li><p>false：事件不会被克隆上去</p></li></ul><h4 id=""><a href="#" class="headerlink" title=""></a></h4><pre><code>$('.clone').click(function(){    var clone  = $('.div1').clone(true)    // 把克隆节点进行追加    $('.div1').parent().append(clone)})</code></pre><h2 id="2、获取表单的方法val-："><a href="#2、获取表单的方法val-：" class="headerlink" title="2、获取表单的方法val()："></a>2、获取表单的方法val()：</h2><p>原生的js通过value值，来实现对input值的获取</p><p>jq通过  —-  val() 来获取表单元素的值</p><pre><code>&lt;input type="button" id="input1" value="naniu"&gt;&lt;input type="text" id="input2"&gt;    $('#input1').click(function(){    // 1、获取  val()方法不给参数，就是代表获取    alert($('#input2').val())    // 2、设置  对val给了参数，就表示了设置表单元素的值    $('#input2').val('hahaha')})</code></pre><p>原生js的value实现：</p><pre><code>    let inputs = document.getElementsByTagName('input')[2]    alert(inputs.value)    inputs.value = 'hehe' 也可以进行赋值    </code></pre>]]></content>
+    
+    
+      
+      
+    <summary type="html">&lt;h1 id=&quot;一、节点的操作&quot;&gt;&lt;a href=&quot;#一、节点的操作&quot; class=&quot;headerlink&quot; title=&quot;一、节点的操作&quot;&gt;&lt;/a&gt;一、节点的操作&lt;/h1&gt;&lt;h2 id=&quot;1、节点的创建&quot;&gt;&lt;a href=&quot;#1、节点的创建&quot; class=&quot;headerlink</summary>
       
     
     
